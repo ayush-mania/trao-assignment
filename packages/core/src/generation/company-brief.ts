@@ -1,6 +1,7 @@
 // Company brief from retrieved text only (Sections 3, 10). No research → no model call, an honest
 // brief that says what could not be found. Sources are the URLs actually used.
 import { z } from 'zod';
+import { looseString } from '../llm/lenient.js';
 import type { LlmClient } from '../llm/client.js';
 import { UNTRUSTED_PREAMBLE, wrapUntrusted } from '../llm/prompting.js';
 import type { Kit } from '../validation/kit-schema.js';
@@ -9,7 +10,7 @@ import { hasAnyResearch, researchSources, type ResearchContext } from './researc
 const BriefSchema = z.object({
   summary: z.string().min(1),
   what_they_do: z.string().min(1),
-  hiring_process: z.string().max(1500).default(''),
+  hiring_process: looseString.pipe(z.string().max(1500)).default(''),
 });
 
 export interface CompanyBriefResult {

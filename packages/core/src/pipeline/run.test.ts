@@ -119,6 +119,9 @@ describe('runToCompletion', () => {
     expect(kit.company_brief.sources).toEqual([]);
     expect(s.steps.find((x) => x.name === 'crawl_company')!.status).toBe('skipped');
     expect(s.steps.find((x) => x.name === 'company_brief')!.status).toBe('skipped');
+    // Unknown company: the discussion search must not run on a hostname and invent sources.
+    expect(s.steps.find((x) => x.name === 'search_discussion')!.status).toBe('skipped');
+    expect(kit.source.company).toBe('');
   });
 
   it('fails with LLM_UNAVAILABLE when every provider is exhausted, keeping earlier steps', async () => {

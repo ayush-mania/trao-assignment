@@ -1,20 +1,24 @@
 // Flashcards per requirement cluster; f ids and requirement_ids are verified in code.
 import { z } from 'zod';
+import { looseString, looseStringArray, rootArrayAs } from '../llm/lenient.js';
 import type { LlmClient } from '../llm/client.js';
 import { UNTRUSTED_PREAMBLE } from '../llm/prompting.js';
 import type { Flashcard, Requirement } from '../validation/kit-schema.js';
 
-const ProposedCards = z.object({
-  flashcards: z
-    .array(
-      z.object({
-        front: z.string().trim().min(1).max(200),
-        back: z.string().trim().min(1).max(1000),
-        requirement_ids: z.array(z.string()).default([]),
-      }),
-    )
-    .default([]),
-});
+const ProposedCards = z.preprocess(
+  rootArrayAs('flashcards'),
+  z.object({
+    flashcards: z
+      .array(
+        z.object({
+          front: z.string().trim().min(1).max(200),
+          back: looseString.pipe(z.string().trim().min(1).max(1000)),
+          requirement_ids: looseStringArray.default([]),
+        }),
+      )
+      .default([]),
+  }),
+);
 
 const SYSTEM = `You write revision flashcards for interview preparation.
 ${UNTRUSTED_PREAMBLE}

@@ -6,7 +6,11 @@ import { extractRequirements } from '../extraction/extract-requirements.js';
 import { generateCompanyBrief } from '../generation/company-brief.js';
 import { generateFlashcards } from '../generation/flashcards.js';
 import { generateQuestions, type QuestionGenInput } from '../generation/questions.js';
-import type { ResearchContext } from '../generation/research-context.js';
+import {
+  looksLikeHost,
+  resolveCompanyName,
+  type ResearchContext,
+} from '../generation/research-context.js';
 import type { LlmClient } from '../llm/client.js';
 import { LlmError } from '../llm/types.js';
 import { crawlSite, type CrawlOptions } from '../retrieval/crawl-site.js';
@@ -136,7 +140,10 @@ async function runStep(name: (typeof STEPS)[number], s: RunState, deps: RunDeps,
         );
       }
       a.research = {
-        companyName: a.role?.company || hostnameOf(s.input.company_url),
+        companyName: resolveCompanyName(
+          a.role?.company ?? '',
+          [hiring, about, crawl.homepage].filter((p): p is NonNullable<typeof p> => Boolean(p)),
+        ),
         companyUrl: s.input.company_url,
         homepage: crawl.homepage,
         aboutPage: about ?? (crawl.homepage?.kind === 'about' ? crawl.homepage : null),
@@ -154,6 +161,12 @@ async function runStep(name: (typeof STEPS)[number], s: RunState, deps: RunDeps,
     }
     case 'search_discussion': {
       const research = a.research as ResearchContext;
+      if (!research.companyName || looksLikeHost(research.companyName)) {
+        research.gaps.push('company name unknown, public discussion not searched');
+        rec.status = 'skipped';
+        rec.notes.push('company name unknown: search skipped rather than searching a hostname');
+        return;
+      }
       const r = await searchPublicDiscussion(research.companyName, deps.discussion);
       research.discussion = r.snippets;
       if (r.snippets.length === 0) {
@@ -276,12 +289,4 @@ function classify(err: unknown): { code: RunErrorCode; message: string } {
     return { code: 'LLM_UNAVAILABLE', message: `LLM providers exhausted: ${err.message}` };
   const message = err instanceof Error ? err.message : String(err);
   return { code: 'INTERNAL', message };
-}
-
-function hostnameOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return '';
-  }
 }

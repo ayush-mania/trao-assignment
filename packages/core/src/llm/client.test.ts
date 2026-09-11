@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { LlmClient, type LlmEvent } from './client.js';
+import { generationExtras } from './gemini.js';
+import { looseString, looseStringArray, rootArrayAs } from './lenient.js';
 import { extractJson } from './json.js';
 import { wrapUntrusted } from './prompting.js';
 import { RateLimiter } from './rate-limiter.js';
@@ -67,6 +69,31 @@ describe('LlmClient retry / failover', () => {
     ]);
     await client([p], [], sleeps).complete(req);
     expect(sleeps).toEqual([2_000, 4_000]);
+  });
+
+  it('fails over immediately on a long Retry-After and skips the cooled-down provider next time', async () => {
+    const events: LlmEvent[] = [];
+    const sleeps: number[] = [];
+    let t = 0;
+    const a = fakeProvider('a', [new LlmError('rate_limit', '429', 'a', 45_000), '{"from":"a"}']);
+    const b = fakeProvider('b', ['{"from":"b"}', '{"from":"b"}']);
+    const c = new LlmClient({
+      providers: [a, b],
+      requestsPerMinute: 100,
+      tokensPerMinute: 1e6,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+      now: () => t,
+      onEvent: (e) => events.push(e),
+    });
+    expect((await c.complete(req)).provider).toBe('b');
+    expect(sleeps).toEqual([]); // no 45s wait
+    expect(events.some((e) => e.type === 'cooldown' && e.provider === 'a')).toBe(true);
+    expect((await c.complete(req)).provider).toBe('b'); // a still cooling down: not even tried
+    expect(a.calls).toHaveLength(1);
+    t = 46_000;
+    expect((await c.complete(req)).provider).toBe('a'); // cooldown over: primary again
   });
 
   it('fails over to the next provider after the attempt budget is exhausted', async () => {
@@ -170,5 +197,30 @@ describe('wrapUntrusted', () => {
     expect(out).not.toMatch(/<\/document>[\s\S]*<\/document>/);
     expect(out).toContain('[truncated]');
     expect(out.startsWith('<document label="jd">')).toBe(true);
+  });
+});
+
+describe('Gemini per-model generation settings (verified against the live API)', () => {
+  it('2.x thinkingBudget, 3.x thinkingLevel, gemma neither and no JSON mime type', () => {
+    expect(generationExtras('gemini-2.5-flash', true)).toEqual({
+      thinkingConfig: { thinkingBudget: 0 },
+      responseMimeType: 'application/json',
+    });
+    expect(generationExtras('gemini-3.5-flash-lite', true)).toEqual({
+      thinkingConfig: { thinkingLevel: 'LOW' },
+      responseMimeType: 'application/json',
+    });
+    expect(generationExtras('gemma-4-26b-a4b-it', true)).toEqual({});
+  });
+});
+
+describe('lenient model output', () => {
+  it('accepts shapes real models returned (null seniority, bullet-array outline) without a repair round', () => {
+    expect(looseString.parse(null)).toBe('');
+    expect(looseString.parse(['libuv', 'phases'])).toBe('libuv\n- phases');
+    expect(looseStringArray.parse('r1')).toEqual(['r1']);
+    expect(looseStringArray.parse(null)).toEqual([]);
+    expect(rootArrayAs('questions')([{ prompt: 'x' }])).toEqual({ questions: [{ prompt: 'x' }] });
+    expect(rootArrayAs('questions')({ questions: [] })).toEqual({ questions: [] });
   });
 });

@@ -8,14 +8,14 @@ Built for Trao's full-stack engineering assessment.
 
 ## Stack
 
-| Layer    | Choice                                                                         | Why                                                                                          |
-| -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| Frontend | Next.js (App Router) + Tailwind + shadcn/ui                                    | Preferred stack; shadcn gives accessible, keyboard-navigable primitives                      |
-| Backend  | Node + Express (TypeScript)                                                    | Preferred stack; long-lived process on Railway runs the generation pipeline                  |
-| Pipeline | `packages/core` — pure TypeScript, no HTTP/DB                                  | Same code path for the web app and the batch CLI (Section 9)                                 |
-| Database | MongoDB Atlas                                                                  | Preferred stack                                                                              |
-| LLM      | Gemini (`gemini-2.5-flash`) primary, Groq (`llama-3.3-70b-versatile`) fallback | Both free tiers; adapter fails over on sustained 429/5xx                                     |
-| Scraping | `undici` fetch + `cheerio` + `robots-parser`                                   | No headless browser: careers/about pages are server-rendered; local fixture sites are static |
+| Layer    | Choice                                                                     | Why                                                                                          |
+| -------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Frontend | Next.js (App Router) + Tailwind + shadcn/ui                                | Preferred stack; shadcn gives accessible, keyboard-navigable primitives                      |
+| Backend  | Node + Express (TypeScript)                                                | Preferred stack; long-lived process on Railway runs the generation pipeline                  |
+| Pipeline | `packages/core` — pure TypeScript, no HTTP/DB                              | Same code path for the web app and the batch CLI (Section 9)                                 |
+| Database | MongoDB Atlas                                                              | Preferred stack                                                                              |
+| LLM      | Gemini (`gemini-3.6-flash`) primary, Groq (`openai/gpt-oss-120b`) fallback | Both free tiers; adapter fails over on a long Retry-After, sustained 5xx or a retired model  |
+| Scraping | `undici` fetch + `cheerio` + `robots-parser`                               | No headless browser: careers/about pages are server-rendered; local fixture sites are static |
 
 Everything is TypeScript. Dependencies are kept at latest, with two deliberate holds: TypeScript 6.x (typescript-eslint does not support 7.0 yet) and ESLint 9.x (eslint-plugin-react is not ESLint 10 compatible yet).
 

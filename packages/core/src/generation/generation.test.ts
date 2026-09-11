@@ -5,7 +5,12 @@ import type { Requirement } from '../validation/kit-schema.js';
 import { generateCompanyBrief } from './company-brief.js';
 import { generateFlashcards } from './flashcards.js';
 import { generateQuestions, planCategories } from './questions.js';
-import { hiringSignals, type ResearchContext } from './research-context.js';
+import {
+  hiringSignals,
+  nameFromTitle,
+  resolveCompanyName,
+  type ResearchContext,
+} from './research-context.js';
 
 const page = (url: string, text: string, kind: CrawledPage['kind']): CrawledPage => ({
   url,
@@ -178,5 +183,15 @@ describe('generateFlashcards', () => {
     const none = fakeLlm([]);
     expect(await generateFlashcards([], role, none)).toEqual([]);
     expect(none.calls).toHaveLength(0);
+  });
+});
+
+describe('resolveCompanyName', () => {
+  it('prefers the JD, then the site title, and never returns a hostname', () => {
+    expect(resolveCompanyName('Acme Robotics', [])).toBe('Acme Robotics');
+    expect(resolveCompanyName('', [{ title: 'Company - Acme Robotics' }])).toBe('Acme Robotics');
+    expect(resolveCompanyName('', [{ title: 'Northwind Analytics' }])).toBe('Northwind Analytics');
+    expect(resolveCompanyName('localhost', [{ title: 'Home' }])).toBe('');
+    expect(nameFromTitle('About | Home')).toBe('');
   });
 });

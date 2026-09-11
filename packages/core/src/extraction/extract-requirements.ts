@@ -2,6 +2,7 @@
 // The model proposes; code disposes. Every requirement must quote the JD (anti-invention gate),
 // priority is derived from the posting's wording, ids are assigned here.
 import { z } from 'zod';
+import { looseString, looseStringArray } from '../llm/lenient.js';
 import type { LlmClient } from '../llm/client.js';
 import { UNTRUSTED_PREAMBLE, wrapUntrusted } from '../llm/prompting.js';
 import { REQUIREMENT_KINDS, type Requirement } from '../validation/kit-schema.js';
@@ -9,12 +10,17 @@ import { derivePriority, indexOfLoose } from './priority.js';
 
 export const THIN_JD_CHARS = 200;
 
+// Logistics the model sometimes lists as requirements ("start immediately", "Remote"). Anchored so
+// a real skill mentioning these words in passing is not dropped.
+const LOGISTICS =
+  /^(start(ing)? (immediately|asap|date)|immediate start|remote|hybrid|on-?site|full[- ]time|part[- ]time|contract|permanent|salary|compensation|benefits|visa|relocation|(based|located) in .*|[a-z ]+ \(remote\))\.?$/i;
+
 const ProposedSchema = z.object({
-  title: z.string().max(200).default(''),
-  seniority: z.string().max(60).default(''),
-  location: z.string().max(120).default(''),
-  company: z.string().max(120).default(''),
-  responsibilities: z.array(z.string().max(300)).max(25).default([]),
+  title: looseString.pipe(z.string().max(200)).default(''),
+  seniority: looseString.pipe(z.string().max(60)).default(''),
+  location: looseString.pipe(z.string().max(120)).default(''),
+  company: looseString.pipe(z.string().max(120)).default(''),
+  responsibilities: looseStringArray.pipe(z.array(z.string().max(300)).max(25)).default([]),
   requirements: z
     .array(
       z.object({
@@ -36,7 +42,11 @@ export interface ExtractedRole {
   responsibilities: string[];
   requirements: Requirement[];
   /** Requirements the model proposed that did not quote the JD; kept for the run log. */
-  rejected: { text: string; evidence: string; reason: 'no_evidence' | 'duplicate' }[];
+  rejected: {
+    text: string;
+    evidence: string;
+    reason: 'no_evidence' | 'duplicate' | 'not_a_requirement';
+  }[];
   /** True when the JD is too short to extract much from — the kit should say so. */
   thin: boolean;
   note: string | null;
@@ -46,6 +56,8 @@ const SYSTEM = `You extract structured facts from a job description for intervie
 ${UNTRUSTED_PREAMBLE}
 Rules:
 - Only list requirements the description actually states. Do not infer, generalise or add typical requirements for the role.
+- Include EVERY stated requirement, including those under "Nice to have", "Preferred", "Bonus" or "Plus" headings. Priority is decided separately; your job is completeness without invention.
+- A requirement is a skill, experience, qualification or trait the candidate must bring. Logistics are NOT requirements: start date, location, remote/hybrid, salary, visa, hours, benefits, the job title itself.
 - For each requirement, "evidence" must be an exact phrase copied verbatim from the description (10-200 characters) that states it.
 - kind: "technical" for tools, languages, systems and engineering skills; "behavioural" for collaboration, leadership, communication, mentoring, ownership; "domain" for industry or product knowledge.
 - One requirement per distinct skill; do not split one phrase into many.
@@ -67,6 +79,10 @@ export async function extractRequirements(jd: string, llm: LlmClient): Promise<E
   const rejected: ExtractedRole['rejected'] = [];
   const seen = new Set<string>();
   for (const r of data.requirements) {
+    if (LOGISTICS.test(r.text) || LOGISTICS.test(r.evidence)) {
+      rejected.push({ text: r.text, evidence: r.evidence, reason: 'not_a_requirement' });
+      continue;
+    }
     if (indexOfLoose(text, r.evidence) < 0) {
       rejected.push({ text: r.text, evidence: r.evidence, reason: 'no_evidence' });
       continue;

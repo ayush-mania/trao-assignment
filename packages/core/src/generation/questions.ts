@@ -2,23 +2,27 @@
 // "the two should not come from the same call with the same instructions"). What was found about
 // the hiring process changes which categories are requested and how many questions each gets.
 import { z } from 'zod';
+import { looseString, looseStringArray, rootArrayAs } from '../llm/lenient.js';
 import type { LlmClient } from '../llm/client.js';
 import { UNTRUSTED_PREAMBLE, wrapUntrusted } from '../llm/prompting.js';
 import type { Question, QuestionCategory, Requirement } from '../validation/kit-schema.js';
 import { hiringSignals, type ResearchContext } from './research-context.js';
 
-const ProposedQuestions = z.object({
-  questions: z
-    .array(
-      z.object({
-        prompt: z.string().trim().min(1).max(600),
-        answer_outline: z.string().max(2000).default(''),
-        requirement_ids: z.array(z.string()).default([]),
-        difficulty: z.number().default(2),
-      }),
-    )
-    .default([]),
-});
+const ProposedQuestions = z.preprocess(
+  rootArrayAs('questions'),
+  z.object({
+    questions: z
+      .array(
+        z.object({
+          prompt: z.string().trim().min(1).max(600),
+          answer_outline: looseString.pipe(z.string().max(2000)).default(''),
+          requirement_ids: looseStringArray.default([]),
+          difficulty: z.number().default(2),
+        }),
+      )
+      .default([]),
+  }),
+);
 
 export interface CategoryPlan {
   category: QuestionCategory;

@@ -130,6 +130,22 @@ describe('extractRequirements', () => {
     expect(llm.calls[0]!.user).toContain('<document label="job description">');
   });
 
+  it('drops logistics the model mislabels as requirements (start date, remote)', async () => {
+    const llm = fakeLlm([
+      {
+        title: 'React developer',
+        requirements: [
+          { text: 'React', evidence: 'React developer needed', kind: 'technical' },
+          { text: 'start immediately', evidence: 'start immediately', kind: 'behavioural' },
+          { text: 'Remote', evidence: 'Remote', kind: 'domain' },
+        ],
+      },
+    ]);
+    const r = await extractRequirements('React developer needed.\nRemote, start immediately.', llm);
+    expect(r.requirements.map((x) => x.text)).toEqual(['React']);
+    expect(r.rejected.map((x) => x.reason)).toEqual(['not_a_requirement', 'not_a_requirement']);
+  });
+
   it('flags a two-line JD as thin and does not pad it', async () => {
     const llm = fakeLlm([
       {

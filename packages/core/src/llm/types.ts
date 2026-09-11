@@ -18,7 +18,7 @@ export interface CompletionResult {
 }
 
 /** Default output budget; the limiter and both providers must agree on it. */
-export const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
+export const DEFAULT_MAX_OUTPUT_TOKENS = 2048;
 
 export type LlmErrorKind = 'rate_limit' | 'server' | 'network' | 'auth' | 'bad_request' | 'empty';
 

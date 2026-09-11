@@ -61,3 +61,36 @@ export function hiringSignals(ctx: ResearchContext): HiringSignals {
     known: text.trim().length > 0,
   };
 }
+
+/**
+ * Company name for searches and the kit: the JD's statement first, else the site's own title
+ * ("Acme Robotics" from "Company - Acme Robotics"), never a bare hostname — searching
+ * "localhost interview" once returned unrelated Hacker News threads that then poisoned a brief.
+ */
+export function resolveCompanyName(fromJd: string, pages: { title: string }[]): string {
+  const jd = fromJd.trim();
+  if (jd && !looksLikeHost(jd)) return jd;
+  for (const page of pages) {
+    const name = nameFromTitle(page.title);
+    if (name) return name;
+  }
+  return '';
+}
+
+const GENERIC_TITLE =
+  /^(home|homepage|welcome|about|about us|company|careers|jobs|team|contact|blog|index)$/i;
+
+export function nameFromTitle(title: string): string {
+  const parts = title
+    .split(/\s+[-|—–:·]\s+/)
+    .map((p) => p.trim())
+    .filter((p) => p && !GENERIC_TITLE.test(p));
+  const candidate = parts.length > 1 ? parts[parts.length - 1]! : (parts[0] ?? '');
+  return candidate.length >= 2 && candidate.length <= 60 && !looksLikeHost(candidate)
+    ? candidate
+    : '';
+}
+
+export function looksLikeHost(s: string): boolean {
+  return /^(localhost|\d{1,3}(\.\d{1,3}){3}|[a-z0-9-]+(\.[a-z0-9-]+)+)(:\d+)?$/i.test(s.trim());
+}
