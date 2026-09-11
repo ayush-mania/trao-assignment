@@ -12,7 +12,11 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.102.8",
+    "@trao/core": "*",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "lucide-react": "^1.44.0",
@@ -20,8 +24,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "shadcn": "^4.21.0",
-    "tw-animate-css": "^1.4.0",
-    "@trao/core": "*"
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

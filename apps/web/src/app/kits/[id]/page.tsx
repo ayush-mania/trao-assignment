@@ -1,6 +1,7 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
+import { KitBuilder } from '@/components/builder/kit-builder';
 import { GenerationProgress } from '@/components/kits/progress';
 import { StatusBadge } from '@/components/kits/status-badge';
 import { Button } from '@/components/ui/button';
@@ -68,13 +69,7 @@ function KitView() {
           </div>
         </details>
       )}
-      {doc.status === 'done' && doc.kit && (
-        <p className="text-sm text-muted-foreground">
-          Builder view lands in the next slice: {doc.kit.role.requirements.length} requirements,{' '}
-          {doc.kit.questions.length} questions, {doc.kit.flashcards.length} flashcards,{' '}
-          {doc.kit.schedule.days.length}-day schedule.
-        </p>
-      )}
+      {doc.status === 'done' && doc.kit && <KitBuilder id={id} kit={doc.kit} meta={doc.meta} />}
     </div>
   );
 }

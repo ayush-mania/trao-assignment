@@ -299,9 +299,18 @@ and a live ten-step generation timeline that polls the persisted run state every
 "Retry from the failed step" on failure. Explicit loading, empty and error states everywhere; real
 links and forms so everything is keyboard-reachable. Walkthrough: [`docs/features/web.md`](docs/features/web.md).
 
-## Builder and practice mode
+## The builder
 
-_Land with TRAO-21 and TRAO-22._
+Inline editing of every question, answer outline, flashcard and the brief (debounced, optimistic,
+rolled back on error); drag-and-drop **and keyboard** reordering with dnd-kit; move between
+categories; add and delete by hand; pin. Each item shows whether it is generated, edited, yours or
+pinned, and every Regenerate button states what it will replace and what it will keep before you
+click — a regeneration of one category, the brief, the flashcards or the schedule never touches
+anything else. Details: [`docs/features/web.md`](docs/features/web.md).
+
+## Practice mode
+
+_Lands with TRAO-22._
 
 ## Known limitations
 

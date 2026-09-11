@@ -1,9 +1,10 @@
 # Feature: web app — sign in, kits, generation progress
 
-> Routes: `/` `/login` `/register` `/kits` `/kits/new` `/kits/[id]`
+> Routes: `/` `/login` `/register` `/kits` `/kits/new` `/kits/[id]` (progress + builder)
 > Source: `apps/web/src` — `lib/api.ts` (typed client) · `lib/session.tsx` (session + gate) · `lib/use-kit.ts` (polling) ·
-> `lib/parse-cases.ts` (bulk file) · `components/layout/shell.tsx` · `components/kits/progress.tsx` · `app/**`
-> Decisions: ADR 0001, 0002
+> `lib/parse-cases.ts` (bulk file) · `lib/builder-api.ts` + `lib/use-builder.ts` (optimistic mutations, debounce) ·
+> `components/layout/shell.tsx` · `components/kits/progress.tsx` · `components/builder/*` · `app/**`
+> Decisions: ADR 0001, 0002, 0008
 
 **The web app only ever imports types from `@trao/core`.** Runtime constants it needs (the step list)
 are mirrored locally, because core depends on Node modules that cannot ship to the browser.
@@ -29,6 +30,28 @@ skipped: http_403"), skipped steps marked as such, the current step, and — on 
 code and a **Retry from the failed step** button (`POST /kits/:id/retry`). When the kit is ready the
 timeline collapses into a "How this kit was researched and built" disclosure. The list page keeps
 refreshing every 3 s while any kit is still generating.
+
+## The builder (kit ready)
+
+Tabs: Brief · Role · Questions · Flashcards · Schedule. Every question, answer outline, flashcard
+side and the brief is an `EditableText`: edits are held locally while focused, saved on a 500 ms
+debounce and on blur, so typing never round-trips per keystroke; a server-side change (a
+regeneration) is reflected when the field is not focused. All builder calls go through
+`useBuilderMutation`: the cache is updated optimistically, rolled back on error, and replaced with
+the server's `{ kit, meta }` on success.
+
+- **Reorder / move** — dnd-kit sortable lists per category with the pointer sensor (4 px activation so
+  clicks still work) and the keyboard sensor: focus the ⋮⋮ handle, Space to pick up, arrows to move,
+  Space to drop. "Move to" is a native `<select>` for cross-category moves. Order is persisted via
+  `PUT /order` and the kit's own `questions[]` follows it.
+- **Origin badges** — `edited` / `yours` / `pinned` from `meta.items`, and each Regenerate button says
+  what it will do first: "replaces 3 generated, keeps 2 edited/pinned/yours".
+- **Regenerate** — disables and marks only that section (`aria-busy`); an LLM 503 shows inline with
+  dismiss and leaves the kit unchanged. Schedule regeneration takes a new day count and is deterministic.
+- **Coverage** — the Questions tab lists requirements no question covers; the Role tab marks them.
+
+Verified in a browser on 2026-09-11: edit q1 → pin q2 → Regenerate technical kept both in place and
+replaced q3 with q14–q16; keyboard reorder moved q14 to the top and persisted.
 
 ## States and keyboard
 
