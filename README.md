@@ -251,9 +251,22 @@ the questions:
    mirrors Section 8 (exactly N days, every must-have with a question scheduled, every id exists)
    and throws if violated, because that would be a bug in this file, not a model hiccup.
 
-## Architecture, retrieval, sequencing, edit state, schedule, decisions
+## Engineering docs
 
-_Filled in as each part lands._
+The sections above are the "what". The "why" and the current shape of the system live in `docs/`:
+
+- [`docs/GRAPH.md`](docs/GRAPH.md) — the one current-state picture: modules, the ten-step run, what
+  each step reads and writes, what code decides instead of the model, the provider chain, open questions.
+- [`docs/decisions/`](docs/decisions/README.md) — architecture decision records (stack, step machine,
+  LLM chain, code-decides rules, retrieval policy, coverage loop, schedule, edit-state model).
+- [`docs/ENFORCEMENT.md`](docs/ENFORCEMENT.md) — every scored rule and whether code, a test, or only a
+  reviewer holds it.
+- [`docs/features/`](docs/features/pipeline.md) — per-feature walkthroughs, starting with the pipeline
+  on a real run.
+
+## Edit state, practice mode, API
+
+_Land with TRAO-17 to TRAO-22; each adds its section here and a `docs/features/` page._
 
 ## Known limitations
 
