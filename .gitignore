@@ -1,0 +1,24 @@
+# tooling / scratch — never part of the submission
+.claude/
+.mcp.json
+tmp/
+
+# node
+node_modules/
+dist/
+.next/
+coverage/
+*.log
+
+# env
+.env
+.env.*
+!.env.example
+
+# os
+.DS_Store
+
+# assessment brief is Trao's document - not published
+software-engineer-assignment.pdf
+*.tsbuildinfo
+next-env.d.ts
