@@ -18,7 +18,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "evaluate": "tsx scripts/evaluate.ts"
+    "evaluate": "tsx scripts/evaluate.ts",
+    "fixtures": "tsx scripts/serve-fixtures.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

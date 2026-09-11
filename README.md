@@ -107,6 +107,22 @@ labelled `<document>` block, and the system prompt states it is data, not instru
 headings and paragraphs kept on their own lines) and returns the page's links resolved to absolute
 URLs, relative ones included, which the crawler ranks.
 
+### Finding the about and hiring pages
+
+`crawlSite()` is a best-first crawl, not a path list. The homepage's links are scored by URL path and
+anchor text (`interview`, `how-we-hire`, `careers`, `jobs`, `join`, `handbook` … high; `about`,
+`company`, `team`, `culture`, `values` … medium; `login`, `pricing`, `privacy`, `press` … dropped;
+off-site links dropped; deeper paths cost a little). The highest-scoring unvisited link is fetched
+next, its links are scored into the same queue, and each fetched page is classified `about` /
+`hiring` / `other` from its own text (URL path is weaker, secondary evidence). The crawl stops when
+both kinds are found, or at 12 pages / 60 s / no links left. Everything not fetched is listed with a
+reason (`budget_exhausted`, `http_404`, `blocked_by_robots` …). A site with no hiring page ends with
+`stoppedBecause: no_more_links` and no `hiring` page — that is a finding the brief reports, not an error.
+
+`npm run fixtures` serves two test companies on `http://localhost:8099`: `/acme/` (hiring process
+buried at `/company/handbook/how-we-interview`, robots.txt blocking `/login`) and `/nohire/` (about
+page, no hiring page anywhere). The crawler tests run against these files.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
