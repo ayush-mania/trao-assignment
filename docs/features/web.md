@@ -70,4 +70,6 @@ links (`render={<Link/>}` with `nativeButton={false}` — Base UI); forms are na
 has a skip link and a labelled `<nav>`.
 
 Verified in a browser on 2026-09-11 against the running API and fixture sites: register → empty
-state → form → live timeline (skipped step shown with its reason) → ready.
+state → form → live timeline (skipped step shown with its reason) → ready. Audited at 390 px: builder
+cards and action rows stack, tabs wrap, the skip link is the first Tab stop with a visible ring; with
+the API stopped every page shows the `role="alert"` error with a working Try again.

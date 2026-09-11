@@ -10,7 +10,7 @@ import { ScheduleTab } from './schedule-tab';
 export function KitBuilder({ id, kit, meta }: { id: string; kit: Kit; meta: KitMeta }) {
   return (
     <Tabs defaultValue="questions">
-      <TabsList className="flex-wrap">
+      <TabsList className="h-auto flex-wrap">
         <TabsTrigger value="brief">Brief</TabsTrigger>
         <TabsTrigger value="role">Role</TabsTrigger>
         <TabsTrigger value="questions">Questions ({kit.questions.length})</TabsTrigger>

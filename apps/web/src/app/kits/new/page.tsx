@@ -77,6 +77,7 @@ function NewKit() {
             required
             minLength={1}
             rows={12}
+            className="min-h-48"
             placeholder="Paste the full posting here. Short postings produce short kits — we never invent requirements."
           />
         </div>
