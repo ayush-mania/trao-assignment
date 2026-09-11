@@ -75,7 +75,7 @@ describe('crawlSite on fixture sites', () => {
     expect(hiring?.text).toContain('take-home');
     expect(r.pages.some((p) => p.kind === 'about')).toBe(true);
     expect(r.stoppedBecause).toBe('found_both');
-    // login is disallowed by robots.txt and never fetched; noise links are never queued
+    // noise links (login, pricing, privacy, terms) are never queued
     expect(r.pages.map((p) => p.url)).not.toContain('http://localhost:8099/acme/login');
     expect(r.pages.length).toBeLessThanOrEqual(6);
   });
@@ -85,6 +85,12 @@ describe('crawlSite on fixture sites', () => {
     expect(r.pages.some((p) => p.kind === 'hiring')).toBe(false);
     expect(r.pages.some((p) => p.kind === 'about')).toBe(true);
     expect(r.stoppedBecause).toBe('no_more_links');
+    // /blog is a link the ranker keeps, but robots.txt disallows it: recorded, never fetched.
+    expect(r.pages.map((p) => p.url)).not.toContain('http://localhost:8099/nohire/blog/');
+    expect(r.skipped).toContainEqual({
+      url: 'http://localhost:8099/nohire/blog/',
+      reason: 'blocked_by_robots',
+    });
   });
 
   it('returns unreachable for a dead host with the reason recorded', async () => {

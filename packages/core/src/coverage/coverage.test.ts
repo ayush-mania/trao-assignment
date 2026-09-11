@@ -73,16 +73,23 @@ describe('closeCoverage', () => {
     expect(r.questions.map((x) => x.id)).toEqual(['q1', 'q3', 'q4']);
   });
 
-  it('caps at three passes', async () => {
+  it('stops at the pass cap even while progress is still being made', async () => {
+    const withExtraMust: QuestionGenInput = {
+      ...input,
+      requirements: [...requirements, { id: 'r4', text: 'Kafka ops', kind: 'technical', priority: 'must' }],
+    };
+    // Pass 2 closes r4 (progress, r2 still open), pass 3 closes r3 (progress, r2 still open):
+    // the loop must stop because of the cap, not because of no_progress or coverage.
     const llm = fakeLlm([
-      { questions: [{ prompt: 'x', requirement_ids: ['r3'], difficulty: 2 }] },
-      { questions: [{ prompt: 'y', requirement_ids: ['r3'], difficulty: 2 }] },
-      { questions: [{ prompt: 'z', requirement_ids: ['r3'], difficulty: 2 }] },
-      { questions: [{ prompt: 'w', requirement_ids: ['r3'], difficulty: 2 }] },
+      { questions: [{ prompt: 'ops', requirement_ids: ['r4'], difficulty: 2 }] }, // pass 2, technical (r3, r4)
+      { questions: [] }, // pass 2, behavioural (r2)
+      { questions: [{ prompt: 'kafka', requirement_ids: ['r3'], difficulty: 2 }] }, // pass 3, technical (r3)
+      { questions: [] }, // pass 3, behavioural (r2)
     ]);
-    // r2 (must) is never closed but r3 keeps "progressing" once, then stalls.
-    const r = await closeCoverage(input, [q('q1', ['r1'])], llm);
-    expect(r.passes).toBeLessThanOrEqual(3);
-    expect(r.uncovered).toContain('r2');
+    const r = await closeCoverage(withExtraMust, [q('q1', ['r1'])], llm);
+    expect(r.passes).toBe(3);
+    expect(r.stoppedBecause).toBe('max_passes');
+    expect(r.uncovered).toEqual(['r2']);
+    expect(llm.calls).toHaveLength(4);
   });
 });

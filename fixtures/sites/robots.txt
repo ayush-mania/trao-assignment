@@ -1,2 +1,3 @@
 User-agent: *
 Disallow: /acme/login
+Disallow: /nohire/blog

@@ -145,8 +145,8 @@ reason (`budget_exhausted`, `http_404`, `blocked_by_robots` …). A site with no
 `stoppedBecause: no_more_links` and no `hiring` page — that is a finding the brief reports, not an error.
 
 `npm run fixtures` serves two test companies on `http://localhost:8099`: `/acme/` (hiring process
-buried at `/company/handbook/how-we-interview`, robots.txt blocking `/login`) and `/nohire/` (about
-page, no hiring page anywhere). The crawler tests run against these files.
+buried at `/company/handbook/how-we-interview`) and `/nohire/` (about page, no hiring page anywhere),
+with a root `robots.txt` that disallows `/nohire/blog`. The crawler tests run against these files.
 
 ### Public discussion of the interview process
 
