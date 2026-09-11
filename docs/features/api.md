@@ -17,8 +17,8 @@ Email + password (min 8 chars). Passwords are hashed with `scrypt` from `node:cr
 dependency). A session is a random token stored **server-side** in Mongo with a TTL index; the browser
 holds it in an `httpOnly` cookie `sid`. Logout deletes the session row, so a stolen cookie dies with
 it; an expired session is a 401 `UNAUTHENTICATED` like any signed-out request. Unknown email and wrong
-password return the identical 401 body (no account enumeration). Web (Vercel) and API (Railway) are
-different sites, so in production the cookie is `SameSite=None; Secure`; locally it is `Lax`.
+password return the identical 401 body (no account enumeration). The web app proxies `/api/*` to the API
+(`apps/web/next.config.ts`), so the cookie is first-party and `SameSite=Lax` everywhere.
 
 ## Creating a kit
 

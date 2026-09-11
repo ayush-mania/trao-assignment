@@ -1,7 +1,8 @@
 // Typed client for apps/api. One place for the base URL, credentials, and error shape.
 import type { Kit, KitMeta, RunState } from '@trao/core';
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+// Same-origin path proxied by next.config.ts (see API_PROXY_TARGET). Override only for direct calls.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 export interface ApiErrorBody {
   error: { code: string; message: string; issues?: { path: string; message: string }[] };

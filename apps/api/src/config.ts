@@ -19,10 +19,10 @@ export const config = {
   mongodbUri: required('MONGODB_URI'),
   sessionSecret: required('SESSION_SECRET'),
   webOrigin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
-  /** Web on Vercel and API on Railway are different sites: the cookie must be SameSite=None; Secure. */
+  /** The web app proxies /api to us, so the cookie is first-party everywhere: Lax is enough. */
   cookie: {
     name: 'sid',
-    sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+    sameSite: 'lax' as const,
     secure: isProd,
     maxAgeMs: 7 * 24 * 60 * 60 * 1000,
   },

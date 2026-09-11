@@ -11,7 +11,7 @@ Built for Trao's full-stack engineering assessment.
 | Layer    | Choice                                                                             | Why                                                                                                                      |
 | -------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Frontend | Next.js (App Router) + Tailwind + shadcn/ui                                        | Preferred stack; shadcn gives accessible, keyboard-navigable primitives                                                  |
-| Backend  | Node + Express (TypeScript)                                                        | Preferred stack; long-lived process on Railway runs the generation pipeline                                              |
+| Backend  | Node + Express (TypeScript)                                                        | Preferred stack; long-lived process on Render runs the generation pipeline                                               |
 | Pipeline | `packages/core` — pure TypeScript, no HTTP/DB                                      | Same code path for the web app and the batch CLI (Section 9)                                                             |
 | Database | MongoDB Atlas                                                                      | Preferred stack                                                                                                          |
 | LLM      | Gemini `gemini-3.5-flash-lite` → Gemini `gemma-4-26b` → Groq `openai/gpt-oss-120b` | All free tiers; chosen by measured limits (see LLM layer); client fails over on long Retry-After, 5xx or a retired model |
@@ -73,7 +73,7 @@ npm run dev -w apps/web   # http://localhost:3000
 
 Checks: `npm run typecheck`, `npm test`, `npm run lint`, `npm run format:check`. GitHub Actions
 (`.github/workflows/ci.yml`) runs all of them plus a full build on every push and pull request to
-`master`, from a clean `npm ci` on Node 24 (current LTS). Deploys are handled by Vercel's and Railway's
+`master`, from a clean `npm ci` on Node 24 (current LTS). Deploys are handled by Vercel's and Render's
 own GitHub integrations, not by CI.
 
 ## Batch entry point
@@ -112,18 +112,19 @@ two-line stub with a 60-day schedule, an unreachable site and an invalid URL.
 **Live:** web https://trao-assignment-web.vercel.app · API https://trao-assignment-hcbp.onrender.com
 (`/health`) · DB MongoDB Atlas M0.
 
-- **Web on Vercel** — project root `apps/web`, Node 24, env `NEXT_PUBLIC_API_URL=<api url>` (inlined
-  at build time, so a change needs a redeploy). Test files are excluded from the Next type check
-  because Vercel does not install the root devDependencies for the workspace.
+- **Web on Vercel** — project root `apps/web`, Node 24, env `API_PROXY_TARGET=<api url>`. The
+  browser only talks to the web origin: `next.config.ts` rewrites `/api/*` to the API server-side,
+  so the session cookie is first-party and works in every browser (Safari, incognito, tracking
+  protection). Test files are excluded from the Next type check because Vercel does not install the
+  root devDependencies for the workspace.
 - **API on Render** (free web service) — root of the repo, build
   `npm install; npm run build -w packages/core -w apps/api`, start `npm start -w apps/api`, health
   check `/health`. Env: everything in `.env.example` plus `NODE_ENV=production`,
   `WEB_ORIGIN=<web url>` (CORS + cookie), and **`NPM_CONFIG_PRODUCTION=false`** — with
   `NODE_ENV=production` npm would skip the devDependencies the build needs. The free instance sleeps
   after 15 minutes idle; the first request takes up to a minute and the web app says so.
-- **Cookies across sites** — web and API are on different domains, so the session cookie is
-  `SameSite=None; Secure`. Chrome and Firefox are fine; Safari's third-party cookie policy may block
-  it (documented limitation; a shared custom domain fixes it).
+- **Session cookie** — `sid`, httpOnly, `SameSite=Lax`, `Secure` in production. Because of the
+  proxy it is never a third-party cookie.
 - **Atlas** — network access must allow Render's egress (`0.0.0.0/0` on the free tier).
 
 ## Kit structure and validation
@@ -357,7 +358,7 @@ retried from the failed step, a crashed process resumes on boot, and an atomic p
 means the same step never runs twice. A duplicate submission returns the existing kit.
 
 Local: `docker compose up -d mongo` then `npm run dev -w apps/api`. Production: MongoDB Atlas via
-`MONGODB_URI`, API on Railway, cookie `SameSite=None; Secure` because the web app is on another site.
+`MONGODB_URI`, API on Render, reached through the web app's `/api` proxy.
 
 ## Generated, edited and pinned state
 

@@ -13,7 +13,7 @@ import type { LlmClient } from '@trao/core';
 
 export function createApp(runner: Runner, llm: LlmClient): express.Express {
   const app = express();
-  app.set('trust proxy', 1); // Railway terminates TLS in front of us
+  app.set('trust proxy', 1); // Render terminates TLS in front of us
   app.use(cors({ origin: config.webOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use(attachUser);
