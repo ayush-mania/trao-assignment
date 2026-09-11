@@ -46,7 +46,7 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
           No flashcards yet. Add one or regenerate.
         </p>
       )}
-      <ul className="grid gap-3 sm:grid-cols-2" aria-busy={pending}>
+      <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3" aria-busy={pending}>
         {kit.flashcards.map((f) => (
           <li
             key={f.id}

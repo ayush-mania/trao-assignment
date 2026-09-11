@@ -48,7 +48,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {withSidebar && (
         <aside
-          className="sticky top-0 hidden h-svh w-72 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex"
+          className="sticky top-0 hidden h-svh w-72 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex 2xl:w-80"
           aria-label="Kits"
         >
           <div className="flex h-14 items-center px-4">
@@ -129,7 +129,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main id="main" className="flex-1">
-          <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8 md:py-10">{children}</div>
+          <div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8 md:py-10 xl:max-w-4xl 2xl:max-w-5xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>

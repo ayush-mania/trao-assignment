@@ -26,7 +26,7 @@ export default function Home() {
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         Interview preparation
       </p>
-      <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight md:text-5xl">
+      <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight md:text-5xl xl:text-6xl">
         Prepare for the interview you actually have.
       </h1>
       <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
