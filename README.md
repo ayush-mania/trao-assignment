@@ -248,8 +248,9 @@ decides:
   unreachable, no hiring page, no discussion). `sources` lists only URLs actually used.
 - **Questions, one call per category** — `planCategories()` decides deterministically which
   categories to generate and how many questions each gets: technical/domain requirements →
-  `technical`; behavioural requirements and responsibilities → `behavioural`; `system-design` for
-  senior roles or when the hiring page mentions a design round; `company-fit` only when we have
+  `technical`; behavioural requirements and responsibilities → `behavioural`; `system-design` whenever
+  there are technical requirements (2 questions; 3 for senior titles; 4 when the hiring page mentions a
+  design round); `company-fit` only when we have
   company documents. What the hiring page says changes the mix: a take-home-first process asks
   fewer whiteboard-style technical questions; a stated system-design round asks four design
   prompts instead of two. Negated sentences ("we do not do whiteboard puzzles") are ignored when

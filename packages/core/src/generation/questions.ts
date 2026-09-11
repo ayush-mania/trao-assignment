@@ -69,11 +69,13 @@ export function planCategories(input: QuestionGenInput): CategoryPlan[] {
       count: clamp(behavioural.length * 2, 3, 8),
     });
   }
-  if (technical.length && (senior || signals.systemDesign)) {
+  // Any role with technical requirements gets design questions; a stated design round or a senior
+  // title gets more. The kits differ in weight, not in whether the category exists at all.
+  if (technical.length) {
     plans.push({
       category: 'system-design',
       requirements: technical,
-      count: signals.systemDesign ? 4 : 2,
+      count: signals.systemDesign ? 4 : senior ? 3 : 2,
     });
   }
   if (

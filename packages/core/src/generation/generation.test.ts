@@ -110,15 +110,16 @@ describe('planCategories', () => {
     });
   });
 
-  it('skips company-fit when nothing about the company was found and uses the balanced default', () => {
+  it('skips company-fit when nothing about the company was found; a mid-level technical role still gets 2 design questions', () => {
     const plan = planCategories({
       role: { ...role, seniority: 'mid', title: 'Engineer' },
       requirements,
       research: noResearch,
       hiringProcess: '',
     });
-    expect(plan.map((p) => p.category)).toEqual(['technical', 'behavioural']);
+    expect(plan.map((p) => p.category)).toEqual(['technical', 'behavioural', 'system-design']);
     expect(plan[0]!.count).toBe(4); // 2 technical reqs x 2
+    expect(plan.find((p) => p.category === 'system-design')!.count).toBe(2);
   });
 });
 
