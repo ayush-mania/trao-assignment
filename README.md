@@ -149,6 +149,26 @@ decides:
 - **Thin JD** — under 200 characters or fewer than two requirements sets `thin: true` with a note that
   the kit is deliberately thin. An empty requirement list is a valid answer.
 
+## Generation
+
+`packages/core/src/generation`. Generation never touches the network; it consumes a `ResearchContext`
+(homepage, about page, hiring page, discussion snippets, and the list of gaps) built by the pipeline.
+
+- **Company brief** — one call over the retrieved documents only. If nothing was retrieved there is
+  no call at all: the brief states that no public information could be found and why (site
+  unreachable, no hiring page, no discussion). `sources` lists only URLs actually used.
+- **Questions, one call per category** — `planCategories()` decides deterministically which
+  categories to generate and how many questions each gets: technical/domain requirements →
+  `technical`; behavioural requirements and responsibilities → `behavioural`; `system-design` for
+  senior roles or when the hiring page mentions a design round; `company-fit` only when we have
+  company documents. What the hiring page says changes the mix: a take-home-first process asks
+  fewer whiteboard-style technical questions; a stated system-design round asks four design
+  prompts instead of two. Negated sentences ("we do not do whiteboard puzzles") are ignored when
+  reading these signals. Each category call has its own system prompt (STAR-shaped behavioural
+  questions, trade-off-driven design prompts, company-fit grounded in the documents). Code verifies
+  every `requirement_ids` entry exists, clamps `difficulty` to 1–3 and assigns `q1…`.
+- **Flashcards** — one call over the requirements; `f1…` ids and `requirement_ids` verified in code.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
