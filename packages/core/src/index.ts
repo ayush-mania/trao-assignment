@@ -8,3 +8,4 @@ export * from './extraction/index.js';
 export * from './generation/index.js';
 export * from './coverage/index.js';
 export * from './schedule/index.js';
+export * from './pipeline/index.js';
