@@ -17,7 +17,7 @@ Built for Trao's full-stack engineering assessment.
 | LLM      | Gemini `gemini-3.5-flash-lite` → Gemini `gemma-4-26b` → Groq `openai/gpt-oss-120b` | All free tiers; chosen by measured limits (see LLM layer); client fails over on long Retry-After, 5xx or a retired model |
 | Scraping | `undici` fetch + `cheerio` + `robots-parser`                                       | No headless browser: careers/about pages are server-rendered; local fixture sites are static                             |
 
-Everything is TypeScript. Dependencies are kept at latest, with two deliberate holds: TypeScript 6.x (typescript-eslint does not support 7.0 yet) and ESLint 9.x (eslint-plugin-react is not ESLint 10 compatible yet).
+The stack is the one the brief prefers, so no deviation needs justifying. Everything is TypeScript. Dependencies are kept at latest, with two deliberate holds: TypeScript 6.x (typescript-eslint does not support 7.0 yet) and ESLint 9.x (eslint-plugin-react is not ESLint 10 compatible yet).
 
 ## Repository layout
 
@@ -28,6 +28,32 @@ apps/web        Next.js UI: builder, practice mode, schedule
 scripts/        evaluate.ts — batch entry point
 fixtures/       local company sites used by tests and the batch demo
 ```
+
+## Architecture and the generation sequence
+
+Three layers, one direction of dependency: `apps/web` → `apps/api` → `packages/core`. Core is the
+whole pipeline as pure TypeScript with no HTTP framework and no database; the API adds
+persistence, auth and a runner; the batch command calls the same core function the API does.
+
+A kit is produced by **ten deliberate steps**, each responding to what the previous ones found. The
+run is a persisted state machine (`advance()` runs one step and returns plain-JSON state), which is
+what makes progress visible, a crash resumable and a double trigger harmless.
+
+| #   | Step                  | Responsible for                                                                                                         | Model?   |
+| --- | --------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | validate_input        | JD non-empty, days 1–365                                                                                                | no       |
+| 2   | extract_requirements  | requirements with verbatim evidence; code drops anything not in the JD, derives must/nice from wording, assigns `r<n>`  | 1 call   |
+| 3   | crawl_company         | best-first crawl of the company site; about page and hiring page classified from their text; unreachable → recorded gap | no       |
+| 4   | search_discussion     | Hacker News + Reddit for the company's interview process; skipped when the company name is unknown                      | no       |
+| 5   | company_brief         | brief from retrieved text only; **no call** when nothing was retrieved                                                  | 0–1      |
+| 6   | generate_questions    | one call per category with its own instructions; the hiring page changes the mix                                        | ≤4 calls |
+| 7   | close_coverage        | set difference in code; targeted questions for gaps; ≤3 passes                                                          | 0–4      |
+| 8   | flashcards            | cards per requirement, ids `f<n>`                                                                                       | 0–1      |
+| 9   | build_schedule        | deterministic allocation across exactly N days                                                                          | no       |
+| 10  | assemble_and_validate | Appendix A validation before anything is saved or written                                                               | no       |
+
+The full current-state picture (module graph, what each step reads and writes, what code decides
+instead of the model) is [`docs/GRAPH.md`](docs/GRAPH.md).
 
 ## Setup
 
@@ -251,6 +277,44 @@ the questions:
    mirrors Section 8 (exactly N days, every must-have with a question scheduled, every id exists)
    and throws if violated, because that would be a bug in this file, not a model hiccup.
 
+## Edge cases (Section 10)
+
+| Case                                            | What happens                                                                                                                                                                                                   |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Company URL invalid, 404 or times out           | crawl step is `skipped` with the reason; kit is still produced with an honest brief and no sources                                                                                                             |
+| No discoverable hiring or about page            | crawl exhausts links; brief notes "no hiring page was found"; no system-design category unless the role is senior                                                                                              |
+| Two-line job description                        | few or zero requirements, `thin` flag, the brief says the kit is deliberately thin; nothing is invented                                                                                                        |
+| No public discussion at all                     | step `skipped`, brief notes it; search is not even attempted when the company name is unknown (a hostname is never used as a name)                                                                             |
+| Model returns invalid JSON or an incomplete kit | JSON repaired, common shape drift accepted, one re-ask with the concrete error; a still-invalid assembled kit fails with `KIT_INVALID` rather than being saved                                                 |
+| Provider rate-limits or briefly fails           | per-provider limiter, backoff honouring `Retry-After`, immediate failover on long waits, three-provider chain; only when all are exhausted does the run fail with `LLM_UNAVAILABLE` (retryable from that step) |
+| Same description and company submitted twice    | fingerprint match within 24 h returns the existing kit (`reused: true`)                                                                                                                                        |
+| 1-day or 60-day schedule                        | one day holds everything; spare days become review days reusing earlier questions; always exactly N days                                                                                                       |
+
+## Security (Section 11)
+
+External URLs are validated before any fetch: `http(s)` only, credentials stripped, and in
+production any host that is or resolves to a private, loopback, link-local or CGNAT address is
+refused — on the initial URL, on every redirect hop, and for `robots.txt`. Fetches are capped by
+content type, size, time and redirect count. Every piece of text we did not write — the pasted
+description, crawled pages, search snippets, and even the model's own summary of the hiring page —
+is passed to the model inside a labelled `<document>` block with a system-prompt rule that it is data,
+never instructions; model output is schema-locked and length-capped. Sessions are server-side with
+`httpOnly` cookies; every kit query is scoped by user id.
+
+## Key design decisions
+
+One paragraph each, argued once, in [`docs/decisions/`](docs/decisions/README.md):
+0001 stack and shared core · 0002 the run as a resumable step machine · 0003 provider chain from
+measured free-tier limits · 0004 what the model proposes, code decides · 0005 retrieval policy ·
+0006 coverage loop · 0007 schedule allocation · 0008 edit state beside the kit · 0009 practice ordering.
+
+## Creative feature
+
+None was added. The time went into proving the pipeline on real models and the builder's edit-state
+model; the practice mode and the honest handling of thin and unreachable inputs are where the
+judgement shows. The most useful next addition would be a "weak spots" report joining practice
+ratings to must-have requirements — it needs no extra model calls.
+
 ## Engineering docs
 
 The sections above are the "what". The "why" and the current shape of the system live in `docs/`:
@@ -322,6 +386,16 @@ card does not reshuffle the deck under you.
 
 ## Known limitations
 
+- **Reddit answers 403** to a bot user-agent, so public discussion comes from Hacker News only. Recorded
+  honestly in every run; spoofing a browser was rejected on principle.
+- **Gemini flash-lite's daily request cap** was not observed during testing (only the 15/min ceiling).
+  If it bites in grading, Gemma and Groq carry the run; the chain and limits are `.env` knobs.
+- **No rate limit on login** — scrypt is the only brake against credential stuffing. `express-rate-limit`
+  keyed on IP + email is the fix; out of scope for the assessment.
+- **Two simultaneous identical submissions can create two kits** — the duplicate check and the insert
+  are not atomic. Cost: one duplicate run, no data loss.
+- **No end-to-end browser suite.** The web flows were driven by hand in a real browser (register → create →
+  timeline → builder → practice, on laptop and 390 px); unit and API integration tests are automated.
 - **DNS rebinding.** The URL policy resolves a hostname and checks the addresses, then `fetch` resolves
   it again. A hostile DNS server with a zero TTL could answer a public address for the check and a
   private one for the connection. Pinning the connection to the checked address needs a custom
