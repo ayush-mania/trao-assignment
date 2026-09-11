@@ -11,8 +11,8 @@ const ProposedQuestions = z.object({
   questions: z
     .array(
       z.object({
-        prompt: z.string().min(1),
-        answer_outline: z.string().default(''),
+        prompt: z.string().trim().min(1).max(600),
+        answer_outline: z.string().max(2000).default(''),
         requirement_ids: z.array(z.string()).default([]),
         difficulty: z.number().default(2),
       }),
@@ -112,8 +112,13 @@ export async function generateQuestionsForCategory(
     input.role.responsibilities.length
       ? `Responsibilities:\n- ${input.role.responsibilities.join('\n- ')}`
       : '',
+    // Derived from crawled pages, so it stays inside the untrusted boundary like any other web text.
     input.hiringProcess
-      ? `What is known about their interview process:\n${input.hiringProcess}`
+      ? wrapUntrusted(
+          'what company documents say about their interview process',
+          input.hiringProcess,
+          1_500,
+        )
       : 'Nothing is known about their interview process.',
     plan.category === 'company-fit' ? companyDocs(input.research) : '',
     `Requirements to cover (id [priority] text):\n${reqList}`,

@@ -9,7 +9,7 @@ import { hasAnyResearch, researchSources, type ResearchContext } from './researc
 const BriefSchema = z.object({
   summary: z.string().min(1),
   what_they_do: z.string().min(1),
-  hiring_process: z.string().default(''),
+  hiring_process: z.string().max(1500).default(''),
 });
 
 export interface CompanyBriefResult {

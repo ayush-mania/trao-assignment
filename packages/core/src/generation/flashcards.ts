@@ -8,8 +8,8 @@ const ProposedCards = z.object({
   flashcards: z
     .array(
       z.object({
-        front: z.string().min(1),
-        back: z.string().min(1),
+        front: z.string().trim().min(1).max(200),
+        back: z.string().trim().min(1).max(1000),
         requirement_ids: z.array(z.string()).default([]),
       }),
     )
