@@ -298,3 +298,29 @@ describe('builder', () => {
     ).toBe(409);
   });
 });
+
+describe('practice', () => {
+  it('records ratings per card, rejects unknown cards, scopes by user, and can be reset', async () => {
+    const agent = await signUp();
+    const created = await agent
+      .post('/kits')
+      .send({ jd: JD, company_url: 'http://localhost:8099/acme/', days: 1 });
+    await runner.idle();
+    const id = created.body.kit._id as string;
+    expect((await agent.get(`/kits/${id}/practice`)).body.practice).toEqual({});
+    const rated = await agent
+      .post(`/kits/${id}/practice/rate`)
+      .send({ cardId: 'f1', confidence: 1 });
+    expect(rated.body.practice.f1).toMatchObject({ confidence: 1, reviews: 1 });
+    expect(
+      (await agent.post(`/kits/${id}/practice/rate`).send({ cardId: 'f99', confidence: 2 })).status,
+    ).toBe(404);
+    expect(
+      (await agent.post(`/kits/${id}/practice/rate`).send({ cardId: 'f1', confidence: 5 })).status,
+    ).toBe(400);
+    const bob = await signUp('bob@example.com');
+    expect((await bob.get(`/kits/${id}/practice`)).status).toBe(404);
+    expect((await agent.delete(`/kits/${id}/practice`)).status).toBe(204);
+    expect((await agent.get(`/kits/${id}/practice`)).body.practice).toEqual({});
+  });
+});

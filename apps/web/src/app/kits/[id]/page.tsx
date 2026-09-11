@@ -1,5 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { KitBuilder } from '@/components/builder/kit-builder';
 import { GenerationProgress } from '@/components/kits/progress';
@@ -48,7 +49,14 @@ function KitView() {
             {company} · {doc.input.days} day{doc.input.days === 1 ? '' : 's'}
           </p>
         </div>
-        <StatusBadge status={doc.status} />
+        <div className="flex items-center gap-2">
+          {doc.status === 'done' && (
+            <Button size="sm" nativeButton={false} render={<Link href={`/kits/${id}/practice`} />}>
+              Practise
+            </Button>
+          )}
+          <StatusBadge status={doc.status} />
+        </div>
       </header>
       {doc.status !== 'done' && (
         <GenerationProgress

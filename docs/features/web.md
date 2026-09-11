@@ -1,6 +1,6 @@
 # Feature: web app — sign in, kits, generation progress
 
-> Routes: `/` `/login` `/register` `/kits` `/kits/new` `/kits/[id]` (progress + builder)
+> Routes: `/` `/login` `/register` `/kits` `/kits/new` `/kits/[id]` (progress + builder) `/kits/[id]/practice`
 > Source: `apps/web/src` — `lib/api.ts` (typed client) · `lib/session.tsx` (session + gate) · `lib/use-kit.ts` (polling) ·
 > `lib/parse-cases.ts` (bulk file) · `lib/builder-api.ts` + `lib/use-builder.ts` (optimistic mutations, debounce) ·
 > `components/layout/shell.tsx` · `components/kits/progress.tsx` · `components/builder/*` · `app/**`
@@ -52,6 +52,15 @@ the server's `{ kit, meta }` on success.
 
 Verified in a browser on 2026-09-11: edit q1 → pin q2 → Regenerate technical kept both in place and
 replaced q3 with q14–q16; keyboard reorder moved q14 to the top and persisted.
+
+## Practice mode
+
+`app/kits/[id]/practice/page.tsx`. Progress lives on the kit document (`practice: { [cardId]:
+{ confidence, seenAt, reviews } }`, API `GET/POST rate/DELETE /kits/:id/practice`). The page mirrors
+core's `buildPracticeOrder` (unseen → lowest confidence → least recently seen → kit order) to build
+a session, keeps that order fixed for the session, reveals on Space and rates on 1/2/3, and lists
+coverage per card. Verified in a browser on 2026-09-11: two cards rated by keyboard, header shows
+"2 of 7 covered · 1 shaky", ratings persisted.
 
 ## States and keyboard
 

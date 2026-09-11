@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.js';
 import { kitsRouter } from './routes/kits.js';
 import type { Runner } from './services/runner.js';
 import { builderRouter } from './routes/builder.js';
+import { practiceRouter } from './routes/practice.js';
 import type { LlmClient } from '@trao/core';
 
 export function createApp(runner: Runner, llm: LlmClient): express.Express {
@@ -19,6 +20,7 @@ export function createApp(runner: Runner, llm: LlmClient): express.Express {
 
   app.get('/health', (_req, res) => res.json({ ok: true }));
   app.use('/auth', authRouter);
+  app.use('/kits/:id/practice', practiceRouter);
   app.use('/kits/:id', builderRouter(llm));
   app.use('/kits', kitsRouter(runner));
 

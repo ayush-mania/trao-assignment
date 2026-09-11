@@ -4,7 +4,7 @@
 > `GET /kits` `POST /kits` `POST /kits/bulk` `GET /kits/:id` `POST /kits/:id/retry` `DELETE /kits/:id` · `GET /health` ·
 > builder: `PATCH /kits/:id/questions/:qid` `PATCH /kits/:id/flashcards/:fid` `PATCH /kits/:id/brief` `POST /kits/:id/questions`
 > `POST /kits/:id/flashcards` `DELETE /kits/:id/items/:itemId` `PUT /kits/:id/order` `POST /kits/:id/questions/:qid/move`
-> `POST /kits/:id/items/:itemId/pin` `POST /kits/:id/regenerate`
+> `POST /kits/:id/items/:itemId/pin` `POST /kits/:id/regenerate` · practice: `GET /kits/:id/practice` `POST /kits/:id/practice/rate` `DELETE /kits/:id/practice`
 > Source: `apps/api/src` — `config` · `db` · `models/{user,session,kit}` · `middleware/{auth,validate,errors}` ·
 > `services/{auth,kits,runner}` · `routes/{auth,kits}` · `app` (factory) · `server` (boot)
 > Decisions: ADR 0001, 0002, 0008

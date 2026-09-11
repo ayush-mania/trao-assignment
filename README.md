@@ -310,7 +310,15 @@ anything else. Details: [`docs/features/web.md`](docs/features/web.md).
 
 ## Practice mode
 
-_Lands with TRAO-22._
+`/kits/:id/practice` steps through the flashcards one at a time — reveal, then rate **Shaky / Okay /
+Solid** (Space and 1 / 2 / 3 on the keyboard). Ratings are saved per card (`POST
+/kits/:id/practice/rate`, optimistic), and the coverage list shows what has been covered, how it went
+and how many times. **Next-session ordering** (`packages/core/src/practice/order.ts`): unseen cards
+first, then ascending confidence, ties broken by least recently seen. This is a confidence-weighted
+sort with a recency tiebreak rather than spaced-repetition intervals, on purpose: the horizon is the
+days until one interview, where "weakest first, then stalest" is what a candidate needs and interval
+scheduling designed for months adds nothing. A session's order is fixed when it starts so rating a
+card does not reshuffle the deck under you.
 
 ## Known limitations
 

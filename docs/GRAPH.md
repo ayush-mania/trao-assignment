@@ -23,6 +23,7 @@ flowchart LR
     schedule["schedule/<br/>allocate (deterministic)"]
     pipeline["pipeline/<br/>state (RunState, STEPS)<br/>run (advance, runToCompletion, fingerprint)"]
     builder["builder/<br/>meta (origin, pinned, gen, order, counters)<br/>edits (pure ops + merge rule)"]
+    practice["practice/<br/>order (unseen → weakest → stalest), rateCard"]
   end
   cli["scripts/evaluate.ts<br/>npm run evaluate"] --> pipeline
   api["apps/api (Express 5 + Mongoose)<br/>auth · kits · runner<br/>docs/features/api.md"] --> pipeline
@@ -30,7 +31,7 @@ flowchart LR
   fixtures["fixtures/sites + scripts/serve-fixtures.ts<br/>localhost:8099 acme · nohire"] -.tests & batch demo.-> retrieval
   pipeline --> extraction & retrieval & generation & coverage & schedule & validation
   builder --> coverage & schedule & validation
-  api --> builder
+  api --> builder & practice
   extraction & generation & coverage --> llm
 ```
 
@@ -125,8 +126,6 @@ Each provider has its own RPM/TPM bucket (`.env`). Output parsed via `extractJso
   classes). Production builds core first (`npm run build` at the root).
 - **Edit / pinned state model (TRAO-19)** — per-item `origin` + `pinned` + section `gen`, kept _alongside_ the
   Appendix A kit (not inside it) so batch output stays pure. To be locked when the API lands.
-- **Practice ordering (TRAO-22)** — confidence-weighted sort with recency tiebreak; proper SRS intervals rejected
-  for a ≤60-day horizon.
 - **Reddit** returns 403 to our bot user-agent; HN works. Leave honest, document.
 - **Gemini flash-lite RPD** not yet observed (only RPM=15 seen). If a daily cap bites in grading, Gemma and Groq carry the run.
 - **DNS rebinding** (URL policy resolves, fetch resolves again) — known limitation, not in this timebox.

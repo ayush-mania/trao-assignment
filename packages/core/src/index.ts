@@ -12,3 +12,4 @@ export * from './schedule/index.js';
 export * from './pipeline/index.js';
 export * from './env.js';
 export * from './builder/index.js';
+export * from './practice/index.js';

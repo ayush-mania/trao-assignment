@@ -23,6 +23,8 @@ const kitSchema = new Schema(
     kit: { type: Schema.Types.Mixed, default: null },
     /** Builder metadata keyed by item id (ADR 0008). */
     meta: { type: Schema.Types.Mixed, default: () => ({ items: {}, sections: {}, order: {} }) },
+    /** Practice progress per flashcard id (Section 7). */
+    practice: { type: Schema.Types.Mixed, default: () => ({}) },
     /** Set while a runner holds this kit; cleared when the step ends (double-trigger guard). */
     runLock: { type: Date, default: null },
   },
