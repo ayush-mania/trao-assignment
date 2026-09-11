@@ -67,6 +67,12 @@ describe('closeCoverage', () => {
     expect(r.questions).toHaveLength(2); // the unattributed question was discarded
   });
 
+  it('never reuses an id after a deletion left a gap (q1, q3 → q4)', async () => {
+    const llm = fakeLlm([{ questions: [{ prompt: 'm', requirement_ids: ['r2'], difficulty: 1 }] }]);
+    const r = await closeCoverage(input, [q('q1', ['r1']), q('q3', ['r3'])], llm);
+    expect(r.questions.map((x) => x.id)).toEqual(['q1', 'q3', 'q4']);
+  });
+
   it('caps at three passes', async () => {
     const llm = fakeLlm([
       { questions: [{ prompt: 'x', requirement_ids: ['r3'], difficulty: 2 }] },

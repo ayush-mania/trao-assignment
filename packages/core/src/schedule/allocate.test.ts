@@ -96,8 +96,16 @@ describe('buildSchedule', () => {
     }
   });
 
-  it('rejects a non-integer or non-positive day count', () => {
-    expect(() => buildSchedule(0, reqs, questions)).toThrow(/positive integer/);
-    expect(() => buildSchedule(2.5, reqs, questions)).toThrow(/positive integer/);
+  it('rejects a non-integer, non-positive or absurd day count', () => {
+    expect(() => buildSchedule(0, reqs, questions)).toThrow(/between 1 and/);
+    expect(() => buildSchedule(2.5, reqs, questions)).toThrow(/between 1 and/);
+    expect(() => buildSchedule(1e9, reqs, questions)).toThrow(/between 1 and/);
+  });
+
+  it('keeps a question whose first requirement was deleted, filed under its next existing one', () => {
+    const edited = reqs.filter((r) => r.id !== 'r1');
+    const s = buildSchedule(2, edited, [q(['r1', 'r2'], 2), q(['r3'], 1)]);
+    const ids = s.days.flatMap((d) => d.question_ids);
+    expect(ids).toHaveLength(2);
   });
 });

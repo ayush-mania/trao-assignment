@@ -2,6 +2,7 @@
 // Layers (Section 13): retrieval / extraction / generation / coverage / schedule / validation.
 export * from './validation/kit-schema.js';
 export * from './validation/validate-kit.js';
+export * from './validation/ids.js';
 export * from './llm/index.js';
 export * from './retrieval/index.js';
 export * from './extraction/index.js';

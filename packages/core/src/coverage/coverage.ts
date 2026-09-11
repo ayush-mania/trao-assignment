@@ -3,6 +3,7 @@
 // uncovered, when a pass makes no progress, or at the pass cap.
 import type { LlmClient } from '../llm/client.js';
 import { generateQuestionsForCategory, type QuestionGenInput } from '../generation/questions.js';
+import { nextId } from '../validation/ids.js';
 import type { Question, QuestionCategory, Requirement } from '../validation/kit-schema.js';
 
 export const MAX_COVERAGE_PASSES = 3;
@@ -77,7 +78,7 @@ export async function closeCoverage(
       );
       for (const q of extra) {
         if (q.requirement_ids.length === 0) continue; // an unattributed question closes nothing
-        questions.push({ id: `q${questions.length + 1}`, ...q });
+        questions.push({ id: nextId('q', questions), ...q });
         generated += 1;
       }
     }

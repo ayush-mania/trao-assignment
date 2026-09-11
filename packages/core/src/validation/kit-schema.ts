@@ -2,6 +2,9 @@
 // Unknown keys are stripped on parse so a validated kit is always the canonical shape.
 import { z } from 'zod';
 
+/** Upper bound on a schedule length; the brief's largest case is 60 days. */
+export const MAX_DAYS = 365;
+
 export const REQUIREMENT_KINDS = ['technical', 'behavioural', 'domain'] as const;
 export const REQUIREMENT_PRIORITIES = ['must', 'nice'] as const;
 export const QUESTION_CATEGORIES = [
@@ -74,7 +77,7 @@ export const KitSchema = z.object({
   questions: z.array(QuestionSchema),
   flashcards: z.array(FlashcardSchema),
   schedule: z.object({
-    days_available: z.number().int().min(1),
+    days_available: z.number().int().min(1).max(MAX_DAYS),
     days: z.array(ScheduleDaySchema),
   }),
   coverage: z.object({

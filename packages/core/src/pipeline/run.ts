@@ -12,7 +12,7 @@ import { LlmError } from '../llm/types.js';
 import { crawlSite, type CrawlOptions } from '../retrieval/crawl-site.js';
 import { searchPublicDiscussion, type DiscussionOptions } from '../retrieval/public-discussion.js';
 import { buildSchedule } from '../schedule/allocate.js';
-import type { Kit } from '../validation/kit-schema.js';
+import { MAX_DAYS, type Kit } from '../validation/kit-schema.js';
 import { validateKit } from '../validation/validate-kit.js';
 import {
   createRunState,
@@ -30,7 +30,6 @@ export interface RunDeps {
   now?: () => Date;
 }
 
-export const MAX_DAYS = 365;
 export const MAX_JD_CHARS = 50_000;
 
 /** Stable identity of a submission, for duplicate detection (Section 10). */

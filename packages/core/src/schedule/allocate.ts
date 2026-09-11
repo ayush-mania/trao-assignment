@@ -1,7 +1,13 @@
 // Deterministic study schedule (Section 8). Arithmetic and allocation only — no model.
 // Exactly `days` days; every must-have requirement appears; heavier, higher-priority material
 // lands earlier; integer minutes; every day has something to do.
-import type { Kit, Question, Requirement, ScheduleDay } from '../validation/kit-schema.js';
+import {
+  MAX_DAYS,
+  type Kit,
+  type Question,
+  type Requirement,
+  type ScheduleDay,
+} from '../validation/kit-schema.js';
 
 export const MINUTES_BY_DIFFICULTY: Record<1 | 2 | 3, number> = { 1: 10, 2: 15, 3: 25 };
 export const MIN_DAY_MINUTES = 30;
@@ -18,8 +24,9 @@ export function buildSchedule(
   requirements: Requirement[],
   questions: Question[],
 ): Kit['schedule'] {
-  if (!Number.isInteger(days) || days < 1)
-    throw new Error(`days must be a positive integer, got ${days}`);
+  if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
+    throw new Error(`days must be an integer between 1 and ${MAX_DAYS}, got ${days}`);
+  }
   const topics = buildTopics(requirements, questions);
   const buckets: { minutes: number; topics: Topic[] }[] = Array.from({ length: days }, () => ({
     minutes: 0,
@@ -60,11 +67,13 @@ export function buildSchedule(
 function buildTopics(requirements: Requirement[], questions: Question[]): Topic[] {
   const byReq = new Map<string, Question[]>();
   const orphan: Question[] = [];
+  const known = new Set(requirements.map((r) => r.id));
   for (const q of questions) {
-    if (q.requirement_ids.length === 0) orphan.push(q);
-    // A question covering several requirements is studied with its first (highest-listed) one.
-    const first = q.requirement_ids[0];
+    // A question covering several requirements is studied with its first one that still exists
+    // (the user may have deleted a requirement in the builder); none → company-and-fit topic.
+    const first = q.requirement_ids.find((id) => known.has(id));
     if (first) byReq.set(first, [...(byReq.get(first) ?? []), q]);
+    else orphan.push(q);
   }
   const topics: Topic[] = requirements.map((r) => {
     const qs = byReq.get(r.id) ?? [];
