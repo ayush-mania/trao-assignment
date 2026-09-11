@@ -45,7 +45,10 @@ npm run dev -w apps/api   # http://localhost:4000
 npm run dev -w apps/web   # http://localhost:3000
 ```
 
-Checks: `npm run typecheck`, `npm test`, `npm run lint`, `npm run format:check`.
+Checks: `npm run typecheck`, `npm test`, `npm run lint`, `npm run format:check`. GitHub Actions
+(`.github/workflows/ci.yml`) runs all of them plus a full build on every push and pull request to
+`master`, from a clean `npm ci` on Node 24 (current LTS). Deploys are handled by Vercel's and Railway's
+own GitHub integrations, not by CI.
 
 ## Batch entry point
 
