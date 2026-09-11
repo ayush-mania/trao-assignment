@@ -112,7 +112,8 @@ two-line stub with a 60-day schedule, an unreachable site and an invalid URL.
 **Live:** web https://trao-assignment-web.vercel.app · API https://trao-assignment-hcbp.onrender.com
 (`/health`) · DB MongoDB Atlas M0.
 
-- **Web on Vercel** — project root `apps/web`, Node 24, env `API_PROXY_TARGET=<api url>`. The
+- **Web on Vercel** — project root `apps/web`, Node 24, env `API_PROXY_TARGET=<api url>` (defaults to
+  the live Render URL in production builds). The
   browser only talks to the web origin: `next.config.ts` rewrites `/api/*` to the API server-side,
   so the session cookie is first-party and works in every browser (Safari, incognito, tracking
   protection). Test files are excluded from the Next type check because Vercel does not install the
