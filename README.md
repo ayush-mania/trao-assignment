@@ -89,6 +89,24 @@ only turn a request into text or a typed error. `LlmClient` adds everything the 
 Untrusted text (pasted JD, crawled pages, search snippets) is always wrapped by `wrapUntrusted()` in a
 labelled `<document>` block, and the system prompt states it is data, not instructions.
 
+## Retrieval
+
+`packages/core/src/retrieval`. `fetchPage()` is the only way anything in the pipeline touches the web:
+
+- **URL policy** — `http(s)` only; credentials and fragments stripped; in production any host that is or
+  resolves to a private, loopback, link-local or CGNAT address is refused (`ALLOW_PRIVATE_URLS=true`
+  only for local batch runs against `localhost` fixture sites). Redirects are followed manually so
+  every hop is re-checked — a 302 to `127.0.0.1` cannot get through.
+- **robots.txt** — read once per origin and cached for the crawl; disallowed paths are skipped and
+  reported as `blocked_by_robots`. Unreachable robots means no restrictions.
+- **Caps** — 10s timeout, 5 redirects, `text/html` / `text/plain` only, 1.5 MB body (streamed and cut).
+- **Never throws for a bad page** — every failure is a reason (`http_404`, `timeout`,
+  `unsupported_content_type`, …) so a source is skipped and recorded, never fatal to the run.
+
+`cleanPage()` turns HTML into readable text (scripts, styles, nav, header, footer, forms removed;
+headings and paragraphs kept on their own lines) and returns the page's links resolved to absolute
+URLs, relative ones included, which the crawler ranks.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
