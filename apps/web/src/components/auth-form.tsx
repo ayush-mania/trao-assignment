@@ -1,11 +1,11 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api, ApiError } from '@/lib/api';
-import { useSetUser } from '@/lib/session';
+import { useSession, useSetUser } from '@/lib/session';
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   return (
@@ -19,9 +19,13 @@ function Inner({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const params = useSearchParams();
   const setUser = useSetUser();
+  const { user } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const next = params.get('next') ?? '/kits';
+  useEffect(() => {
+    if (user) router.replace('/kits'); // already signed in: the form has no purpose
+  }, [user, router]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

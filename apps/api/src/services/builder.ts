@@ -165,11 +165,19 @@ export async function regenerate(
       research,
       hiringProcess: state.artifacts.hiringProcess ?? '',
     };
-    const plan = planCategories(input).find((p) => p.category === category) ?? {
-      category,
-      requirements: b.kit.role.requirements,
-      count: 4,
-    };
+    // Same rule as generation (ADR 0004): a category the plan excludes has nothing to ground it —
+    // company-fit without company documents, behavioural without behavioural requirements. Refusing
+    // beats fabricating; the user can still write questions by hand.
+    const plan = planCategories(input).find((p) => p.category === category);
+    if (!plan) {
+      throw new HttpError(
+        409,
+        'NOT_APPLICABLE',
+        category === 'company-fit'
+          ? 'Nothing was found about this company, so company-fit questions would be invented. Add your own instead.'
+          : `No ${category} requirements were extracted, so there is nothing to generate ${category} questions from.`,
+      );
+    }
     const fresh = await generateQuestionsForCategory(plan, input, llm);
     next = mergeRegeneratedQuestions(b, category, fresh);
   }

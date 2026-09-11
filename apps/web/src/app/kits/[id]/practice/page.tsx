@@ -85,15 +85,20 @@ function Practice() {
     onError: (_e, _v, ctx) => ctx?.prev && qc.setQueryData(['practice', id], ctx.prev),
     onSuccess: (data) => qc.setQueryData(['practice', id], data),
   });
-  const reset = useMutation({
-    mutationFn: () => practiceCall<void>(`/kits/${id}/practice`, { method: 'DELETE' }),
-    onSuccess: () => qc.setQueryData(['practice', id], { practice: {} }),
-  });
-
   // A session is a fixed order computed when it starts; ratings during it do not reshuffle it.
   const [session, setSession] = useState<Flashcard[] | null>(null);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+
+  const reset = useMutation({
+    mutationFn: () => practiceCall<void>(`/kits/${id}/practice`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.setQueryData(['practice', id], { practice: {} });
+      setSession(null);
+      setIndex(0);
+      setRevealed(false);
+    },
+  });
 
   const cards = kitQ.data?.kit.kit?.flashcards ?? [];
   const state = useMemo(() => practiceQ.data?.practice ?? {}, [practiceQ.data]);
@@ -133,7 +138,16 @@ function Practice() {
   if (kitQ.isPending || practiceQ.isPending)
     return <Skeleton className="h-64 w-full" aria-label="Loading practice" />;
   if (kitQ.error || practiceQ.error)
-    return <ErrorState message={(kitQ.error ?? practiceQ.error)!.message} />;
+    return (
+      <ErrorState
+        message={(kitQ.error ?? practiceQ.error)!.message}
+        action={
+          <Button variant="outline" nativeButton={false} render={<Link href="/kits" />}>
+            Back to your kits
+          </Button>
+        }
+      />
+    );
   if (!kitQ.data.kit.kit)
     return (
       <ErrorState

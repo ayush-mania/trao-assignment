@@ -45,6 +45,7 @@ practiceRouter.post(
         userId: req.user!.id,
       }).select('practice kit');
       if (!doc) throw new HttpError(404, 'NOT_FOUND', 'No such kit');
+      if (!doc.kit) throw new HttpError(409, 'NOT_READY', 'The kit is not finished yet');
       const cards = ((doc.kit as { flashcards?: { id: string }[] } | null)?.flashcards ?? []).map(
         (c) => c.id,
       );

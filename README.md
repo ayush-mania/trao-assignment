@@ -392,8 +392,8 @@ card does not reshuffle the deck under you.
   If it bites in grading, Gemma and Groq carry the run; the chain and limits are `.env` knobs.
 - **No rate limit on login** — scrypt is the only brake against credential stuffing. `express-rate-limit`
   keyed on IP + email is the fix; out of scope for the assessment.
-- **Two simultaneous identical submissions can create two kits** — the duplicate check and the insert
-  are not atomic. Cost: one duplicate run, no data loss.
+- **Duplicate detection is per API instance** — an in-process lock serialises simultaneous identical
+  submissions; with several instances the check and the insert are not atomic. Cost: one duplicate run.
 - **No end-to-end browser suite.** The web flows were driven by hand in a real browser (register → create →
   timeline → builder → practice, on laptop and 390 px); unit and API integration tests are automated.
 - **DNS rebinding.** The URL policy resolves a hostname and checks the addresses, then `fetch` resolves

@@ -324,3 +324,48 @@ describe('practice', () => {
     expect((await agent.get(`/kits/${id}/practice`)).body.practice).toEqual({});
   });
 });
+
+describe('QA regressions (manual run 2026-09-11)', () => {
+  it('treats a malformed cookie as signed out and maps oversized bodies to 413', async () => {
+    expect((await request(app).get('/auth/me').set('cookie', 'sid=%E0')).status).toBe(401);
+    const agent = await signUp();
+    const big = await agent
+      .post('/kits')
+      .send({ jd: 'x'.repeat(1_100_000), company_url: 'http://a/', days: 1 });
+    expect(big.status).toBe(413);
+    expect(big.body.error.code).toBe('PAYLOAD_TOO_LARGE');
+  });
+
+  it('serialises simultaneous identical submissions into one kit', async () => {
+    const agent = await signUp();
+    const body = { jd: JD, company_url: 'http://localhost:8099/acme/', days: 2 };
+    const results = await Promise.all([
+      agent.post('/kits').send(body),
+      agent.post('/kits').send(body),
+      agent.post('/kits').send(body),
+    ]);
+    const ids = new Set(results.map((r) => r.body.kit._id));
+    expect(ids.size).toBe(1);
+    expect(results.filter((r) => r.body.reused).length).toBe(2);
+    await runner.idle();
+  });
+
+  it('refuses to regenerate a category the plan excludes instead of fabricating it', async () => {
+    const agent = await signUp();
+    // No company research: company_url is unreachable, so company-fit has nothing to ground it.
+    const created = await agent.post('/kits').send({
+      jd: 'Go developer wanted.\nRequirements:\n- Go',
+      company_url: 'http://localhost:1/',
+      days: 1,
+    });
+    await runner.idle();
+    const id = created.body.kit._id;
+    const r = await agent.post(`/kits/${id}/regenerate`).send({ section: 'questions:company-fit' });
+    expect(r.status).toBe(409);
+    expect(r.body.error.code).toBe('NOT_APPLICABLE');
+    const rate = await agent
+      .post(`/kits/${id}/practice/rate`)
+      .send({ cardId: 'f1', confidence: 1 });
+    expect([200, 404]).toContain(rate.status); // finished kit: real answer, not NOT_READY
+  });
+});

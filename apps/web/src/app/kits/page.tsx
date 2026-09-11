@@ -71,7 +71,7 @@ function KitList() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {kits.map((k) => {
             const title = k.kit?.role?.title || 'Untitled role';
-            const company = k.kit?.source?.company || hostOf(k.input.company_url);
+            const company = k.kit?.source?.company || '';
             const lastStep = k.state.steps[k.state.steps.length - 1];
             return (
               <li key={k._id}>
@@ -104,12 +104,4 @@ function KitList() {
       )}
     </div>
   );
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return url;
-  }
 }

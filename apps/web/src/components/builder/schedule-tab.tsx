@@ -44,7 +44,8 @@ export function ScheduleTab({ id, kit }: { id: string; kit: Kit }) {
           {pending ? 'Rebuilding…' : 'Rebuild schedule'}
         </Button>
         <span className="text-xs text-muted-foreground">
-          {kit.schedule.days.length} days · {total} minutes total · deterministic, no model involved
+          {kit.schedule.days.length} day{kit.schedule.days.length === 1 ? '' : 's'} · {total}{' '}
+          minutes total · deterministic, no model involved
         </span>
       </form>
       <ol className="space-y-2">

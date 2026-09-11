@@ -90,18 +90,25 @@ export function QuestionsTab({ id, kit, meta }: { id: string; kit: Kit; meta: Ki
               <h3 id={`cat-${c}`} className="font-medium capitalize">
                 {c} <span className="text-sm font-normal text-muted-foreground">({qs.length})</span>
               </h3>
-              <RegenerateButton
-                label={`Regenerate ${c}`}
-                itemIds={qs.map((q) => q.id)}
-                meta={meta}
-                pending={regenerating === c}
-                onClick={() => {
-                  setRegenerating(c);
-                  m.mutateAsync({ run: () => builderApi.regenerate(id, `questions:${c}`) }).finally(
-                    () => setRegenerating(null),
-                  );
-                }}
-              />
+              {c === 'company-fit' && kit.company_brief.sources.length === 0 && qs.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  Nothing was found about this company, so company-fit questions would be invented —
+                  write your own below.
+                </span>
+              ) : (
+                <RegenerateButton
+                  label={`Regenerate ${c}`}
+                  itemIds={qs.map((q) => q.id)}
+                  meta={meta}
+                  pending={regenerating === c}
+                  onClick={() => {
+                    setRegenerating(c);
+                    m.mutateAsync({
+                      run: () => builderApi.regenerate(id, `questions:${c}`),
+                    }).finally(() => setRegenerating(null));
+                  }}
+                />
+              )}
             </div>
             <DndContext
               sensors={sensors}

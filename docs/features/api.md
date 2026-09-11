@@ -55,7 +55,9 @@ and persists both. Responses return the new `{ kit, meta }` so the UI can replac
 `POST /kits/:id/regenerate { section }` with `section` ∈ `company_brief` | `schedule` | `flashcards` |
 `questions:<category>` re-runs only that section's generator using the research persisted in the run
 state, then merges per ADR 0008: edited, manual and pinned items survive in place. A model outage
-during regeneration is a 503 `LLM_UNAVAILABLE` and nothing changes. Builder routes need a finished
+during regeneration is a 503 `LLM_UNAVAILABLE` and nothing changes. A category the generation plan
+excluded (company-fit with no company research, behavioural with no behavioural requirements) is
+refused with 409 `NOT_APPLICABLE` rather than fabricated — found in the manual QA run. Builder routes need a finished
 kit (409 `NOT_READY` otherwise). Observed on a real run: after regenerating `technical`, the edited
 `q1`, pinned `q2` and manual `q14` stayed; `q3` was replaced by `q15–q17` at gen 2.
 

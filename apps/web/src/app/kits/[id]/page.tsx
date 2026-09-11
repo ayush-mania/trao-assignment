@@ -7,7 +7,7 @@ import { GenerationProgress } from '@/components/kits/progress';
 import { StatusBadge } from '@/components/kits/status-badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { ErrorState, RequireSession } from '@/lib/session';
 import { kitKey, useKit } from '@/lib/use-kit';
 
@@ -33,7 +33,16 @@ function KitView() {
     return (
       <ErrorState
         message={q.error.message}
-        action={<Button onClick={() => q.refetch()}>Try again</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" nativeButton={false} render={<Link href="/kits" />}>
+              Back to your kits
+            </Button>
+            {!(q.error instanceof ApiError && q.error.status === 404) && (
+              <Button onClick={() => q.refetch()}>Try again</Button>
+            )}
+          </div>
+        }
       />
     );
   const doc = q.data.kit;

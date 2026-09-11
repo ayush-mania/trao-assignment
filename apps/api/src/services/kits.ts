@@ -21,7 +21,23 @@ export function toObjectId(id: string): Types.ObjectId {
  * Same description + company + days within 24h returns the existing kit (Section 10 duplicate case)
  * unless that run failed, in which case a fresh attempt is fair.
  */
-export async function createOrReuseKit(
+// Dedupe check + insert are two operations; serialise them per (user, fingerprint) so simultaneous
+// identical submissions from one user cannot each create a kit. In-process: one API instance.
+const inFlight = new Map<string, Promise<{ kit: KitDoc; reused: boolean }>>();
+
+export function createOrReuseKit(
+  userId: string,
+  input: CreateKitInput,
+): Promise<{ kit: KitDoc; reused: boolean }> {
+  const key = `${userId}:${fingerprint(input)}`;
+  const pending = inFlight.get(key);
+  if (pending) return pending.then((r) => ({ ...r, reused: true }));
+  const run = createOrReuseKitUnlocked(userId, input).finally(() => inFlight.delete(key));
+  inFlight.set(key, run);
+  return run;
+}
+
+async function createOrReuseKitUnlocked(
   userId: string,
   input: CreateKitInput,
 ): Promise<{ kit: KitDoc; reused: boolean }> {
