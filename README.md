@@ -123,6 +123,15 @@ reason (`budget_exhausted`, `http_404`, `blocked_by_robots` …). A site with no
 buried at `/company/handbook/how-we-interview`, robots.txt blocking `/login`) and `/nohire/` (about
 page, no hiring page anywhere). The crawler tests run against these files.
 
+### Public discussion of the interview process
+
+`searchPublicDiscussion(company)` queries two free, key-less sources in parallel: the Hacker News
+Algolia API and Reddit's public JSON search. Results are kept only if they mention the company name
+and an interview word, de-duplicated by URL, newest first, at most 8 snippets, each with its source URL
+so the kit can cite it. A failing source is recorded and skipped. Glassdoor, Blind and LinkedIn block
+automated access and are not attempted. Zero results is reported as such — the brief is explicit
+that an honest "nothing found" beats an invented brief.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
