@@ -1,0 +1,32 @@
+[
+  {
+    "id": "acme-senior-backend",
+    "jd": "Senior Backend Engineer\n\nAcme Robotics is hiring a Senior Backend Engineer for the fleet platform team in Berlin (hybrid).\n\nWhat you will do\n- Own the telemetry ingestion service that receives events from thousands of robots\n- Design APIs used by the fleet console and by customers\n- Mentor junior engineers and lead technical design reviews\n- Take part in the on-call rotation\n\nRequirements\n- 5+ years of professional experience with Node.js and TypeScript\n- Strong knowledge of PostgreSQL, including query optimisation\n- Experience designing and operating event-driven systems (Kafka or similar)\n- Experience mentoring engineers\n- Clear written and spoken English\n\nNice to have\n- Familiarity with Kubernetes\n- Bonus points for experience in robotics or logistics\n- Exposure to Go",
+    "company_url": "http://localhost:8099/acme/",
+    "days": 5
+  },
+  {
+    "id": "northwind-data-scientist",
+    "jd": "Data Scientist, Demand Forecasting\n\nNorthwind Analytics (Copenhagen, remote-friendly)\n\nYou will build and ship forecasting models for grocery and fashion retailers.\n\nMust have\n- 3+ years applying machine learning to time-series data\n- Python (pandas, scikit-learn) and SQL\n- Experience deploying models to production on GCP or AWS\n- Ability to explain results to non-technical stakeholders\n\nPreferred\n- Experience with retail or supply-chain data\n- Familiarity with dbt",
+    "company_url": "http://localhost:8099/nohire/",
+    "days": 1
+  },
+  {
+    "id": "two-line-stub",
+    "jd": "React developer needed.\nRemote, start immediately.",
+    "company_url": "http://localhost:8099/nohire/",
+    "days": 60
+  },
+  {
+    "id": "unreachable-company",
+    "jd": "Platform Engineer\n\nRequirements\n- Terraform and AWS\n- Linux systems administration\n- On-call experience\n\nNice to have\n- Rust",
+    "company_url": "http://localhost:8098/does-not-exist/",
+    "days": 3
+  },
+  {
+    "id": "not-a-url",
+    "jd": "Frontend Engineer\n\nRequirements\n- React and TypeScript\n- Accessibility (WCAG) experience\n- Testing with Playwright",
+    "company_url": "definitely not a url",
+    "days": 7
+  }
+]

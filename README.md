@@ -53,8 +53,30 @@ Checks: `npm run typecheck`, `npm test`, `npm run lint`, `npm run format:check`.
 npm run evaluate -- --input cases.json --output kits.json
 ```
 
-Reads an array of `{ id, jd, company_url, days }` cases and writes the Appendix B file. Needs only
-the LLM keys from `.env` (no database, no running server). _Status: not implemented yet._
+Reads an array of `{ id, jd, company_url, days }` cases (Appendix B input) and writes
+`{ version, generated_at, kits: [{ id, status, kit, error }] }`. Needs only the LLM keys from
+`.env` — no database, no running server. `scripts/evaluate.ts` calls `runToCompletion()` from
+`packages/core`, the same function the API's runner uses; there is no second implementation.
+
+- Cases run one at a time by default (`--concurrency N` to change) because free-tier limits are
+  per minute; every step is logged to stderr with timing and what it found.
+- A case that fails is recorded as `status: "failed"` with an error code
+  (`INVALID_INPUT`, `LLM_UNAVAILABLE`, `KIT_INVALID`, `INTERNAL`) and the run continues.
+  Unreachable sites, missing hiring pages and empty discussion searches are **not** failures — the
+  case is `ok` and the kit says what could not be found.
+- Exit code 0 when the run completed (even with failed cases); 2 only when the input file cannot
+  be read or no LLM provider is configured.
+- Company sites may be on a local address: set `ALLOW_PRIVATE_URLS=true` in `.env` for such runs.
+
+Try it against the bundled fixture sites:
+
+```bash
+npm run fixtures &                      # serves http://localhost:8099/acme/ and /nohire/
+npm run evaluate -- --input cases.example.json --output kits.json
+```
+
+`cases.example.json` covers a full JD with a buried hiring page, a company with no hiring page, a
+two-line stub with a 60-day schedule, an unreachable site and an invalid URL.
 
 ## Deployment
 
