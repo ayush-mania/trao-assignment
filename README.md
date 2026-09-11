@@ -184,6 +184,24 @@ that will not attribute); a hard cap of **3 passes** (initial generation counts 
 enough to close every realistic gap and keeps a five-case batch inside its time budget under
 free-tier rate limits. `coverage.passes` reports what actually ran.
 
+## Schedule allocation
+
+`packages/core/src/schedule/allocate.ts` — arithmetic only, no model. Given `days`, the requirements and
+the questions:
+
+1. **Topics** — one per requirement holding its questions (a question tied to several requirements
+   is studied with the first one). Minutes per question by difficulty: 10 / 15 / 25. Topic weight =
+   priority (must 3, nice 1) × mean difficulty. Sorted must-first, then heaviest first. Questions
+   with no requirement (company-fit) form a final "Company and fit" topic.
+2. **Allocation** — topics are dealt in that order to the lightest day within a window that opens
+   one day at a time, so must-have and hard material lands early while daily load stays balanced.
+3. **More days than topics** (a 60-day request) — spare days become review days that revisit
+   earlier questions, must-haves and hard questions first; ids stay valid and no day is empty.
+4. **One day** — everything lands on day 1. **No questions** (thin kit) — N general-preparation days.
+5. Every day has a focus, integer minutes (minimum 30) and question ids. A post-condition check
+   mirrors Section 8 (exactly N days, every must-have with a question scheduled, every id exists)
+   and throws if violated, because that would be a bug in this file, not a model hiccup.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
