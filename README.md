@@ -169,6 +169,21 @@ decides:
   every `requirement_ids` entry exists, clamps `difficulty` to 1–3 and assigns `q1…`.
 - **Flashcards** — one call over the requirements; `f1…` ids and `requirement_ids` verified in code.
 
+## Coverage and the second pass
+
+`packages/core/src/coverage`. `findGaps()` is a set difference in code — every requirement id minus
+every id any question references — split into must-have and nice-to-have gaps. `closeCoverage()`
+then loops: for the gap requirements only, grouped by category, it calls the same per-category
+generator with an explicit "these have no question yet, write one each and reference the id"
+instruction, appends the results and re-checks. A question that comes back without a requirement
+id closes nothing and is discarded.
+
+Stop rules, in order: no must-have gap left (nice-to-have gaps may remain and are reported in
+`coverage.uncovered_requirement_ids`); a pass that made no progress (do not burn tokens on a model
+that will not attribute); a hard cap of **3 passes** (initial generation counts as pass 1). Three is
+enough to close every realistic gap and keeps a five-case batch inside its time budget under
+free-tier rate limits. `coverage.passes` reports what actually ran.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._

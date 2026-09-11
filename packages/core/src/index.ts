@@ -6,3 +6,4 @@ export * from './llm/index.js';
 export * from './retrieval/index.js';
 export * from './extraction/index.js';
 export * from './generation/index.js';
+export * from './coverage/index.js';
