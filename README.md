@@ -110,3 +110,10 @@ URLs, relative ones included, which the crawler ranks.
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
+
+## Known limitations
+
+- **DNS rebinding.** The URL policy resolves a hostname and checks the addresses, then `fetch` resolves
+  it again. A hostile DNS server with a zero TTL could answer a public address for the check and a
+  private one for the connection. Pinning the connection to the checked address needs a custom
+  undici agent; not done in this timebox.

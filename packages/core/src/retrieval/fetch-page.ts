@@ -78,7 +78,13 @@ export async function fetchPage(input: string, opts: FetchOptions): Promise<Fetc
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (!location) return { ok: false, url: url.href, reason: `http_${res.status}` };
-      const next = await checkUrl(new URL(location, current).href, opts.policy);
+      let target: string;
+      try {
+        target = new URL(location, current).href;
+      } catch {
+        return { ok: false, url: url.href, reason: 'invalid_url' };
+      }
+      const next = await checkUrl(target, opts.policy);
       if (!next.ok) return { ok: false, url: url.href, reason: next.reason };
       current = next.url;
       continue;
@@ -93,7 +99,17 @@ export async function fetchPage(input: string, opts: FetchOptions): Promise<Fetc
     if (Number.isFinite(declared) && declared > maxBytes) {
       return { ok: false, url: url.href, reason: 'too_large' };
     }
-    const body = await readCapped(res, maxBytes);
+    let body: string | null;
+    try {
+      body = await readCapped(res, maxBytes);
+    } catch (err) {
+      const name = (err as Error)?.name;
+      return {
+        ok: false,
+        url: url.href,
+        reason: name === 'TimeoutError' || name === 'AbortError' ? 'timeout' : 'network_error',
+      };
+    }
     if (body === null) return { ok: false, url: url.href, reason: 'too_large' };
     return {
       ok: true,
@@ -142,11 +158,17 @@ async function loadRobots(
   if (cache?.has(origin)) return cache.get(origin) ?? null;
   let rules: RobotsRules | null = null;
   try {
+    // No redirects (a 3xx robots.txt means "no rules") so this fetch cannot be steered off-origin,
+    // and the body is capped like any other page.
     const res = await fetchImpl(`${origin}/robots.txt`, {
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
       headers: { 'user-agent': USER_AGENT },
     });
-    if (res.status === 200) rules = robotsParser(`${origin}/robots.txt`, await res.text());
+    if (res.status === 200) {
+      const txt = await readCapped(res, 200_000);
+      if (txt !== null) rules = robotsParser(`${origin}/robots.txt`, txt);
+    }
   } catch {
     rules = null;
   }

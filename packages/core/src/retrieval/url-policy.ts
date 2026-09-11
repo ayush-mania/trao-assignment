@@ -58,8 +58,8 @@ async function defaultResolve(host: string): Promise<string[]> {
 
 /** RFC1918, loopback, link-local, CGNAT, unspecified, and their IPv6 equivalents / v4-mapped forms. */
 export function isPrivateAddress(ip: string): boolean {
-  const v4 = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
-  if (isIP(v4) === 4) {
+  const v4 = unmapV4(ip);
+  if (v4 && isIP(v4) === 4) {
     const [a = 0, b = 0] = v4.split('.').map(Number);
     return (
       a === 10 ||
@@ -79,4 +79,17 @@ export function isPrivateAddress(ip: string): boolean {
     v6.startsWith('fd') ||
     v6.startsWith('fe80')
   );
+}
+
+/** `::ffff:1.2.3.4` and its hex form `::ffff:102:304` (how WHATWG URL serialises it) → `1.2.3.4`. */
+function unmapV4(ip: string): string | null {
+  const lower = ip.toLowerCase();
+  if (!lower.startsWith('::ffff:')) return isIP(ip) === 4 ? ip : null;
+  const rest = lower.slice(7);
+  if (isIP(rest) === 4) return rest;
+  const m = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(rest);
+  if (!m) return null;
+  const hi = parseInt(m[1]!, 16);
+  const lo = parseInt(m[2]!, 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
 }

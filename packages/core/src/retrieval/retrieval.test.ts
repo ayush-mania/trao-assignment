@@ -53,6 +53,17 @@ describe('checkUrl (SSRF policy)', () => {
     expect(r.ok && r.url.href).toBe('https://example.com/a');
   });
 
+  it('rejects hex v4-mapped IPv6 literals (how URL serialises ::ffff:a.b.c.d)', async () => {
+    expect(await checkUrl('http://[::ffff:a9fe:a9fe]/latest/meta-data', prod)).toEqual({
+      ok: false,
+      reason: 'private_address',
+    });
+    expect(await checkUrl('http://[::ffff:7f00:1]/', prod)).toEqual({
+      ok: false,
+      reason: 'private_address',
+    });
+  });
+
   it('classifies private ranges', () => {
     expect(
       ['10.1.1.1', '172.16.0.1', '192.168.1.1', '100.64.0.1', '::ffff:127.0.0.1', 'fd00::1'].every(
@@ -131,6 +142,48 @@ describe('fetchPage', () => {
       fetchImpl: fakeFetch({ 'https://acme.example/big': { body: 'x'.repeat(100) } }),
     });
     expect(big).toMatchObject({ ok: false, reason: 'too_large' });
+  });
+
+  it('returns a reason for a malformed redirect target', async () => {
+    const r = await fetchPage('https://acme.example/go', {
+      ...base,
+      fetchImpl: fakeFetch({
+        'https://acme.example/go': { status: 302, headers: { location: 'http://' } },
+      }),
+    });
+    expect(r).toMatchObject({ ok: false, reason: 'invalid_url' });
+  });
+
+  it('returns a reason when the body stream fails mid-read', async () => {
+    const stalled = () =>
+      new ReadableStream<Uint8Array>({
+        pull() {
+          const e = new Error('aborted');
+          e.name = 'TimeoutError';
+          throw e;
+        },
+      });
+    const impl = (async () =>
+      new Response(stalled(), {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })) as unknown as typeof fetch;
+    const r = await fetchPage('https://acme.example/stall', { ...base, fetchImpl: impl });
+    expect(r).toMatchObject({ ok: false, reason: 'timeout' });
+  });
+
+  it('ignores a redirected robots.txt instead of following it', async () => {
+    const r = await fetchPage('https://acme.example/', {
+      ...base,
+      fetchImpl: fakeFetch({
+        'https://acme.example/robots.txt': {
+          status: 302,
+          headers: { location: 'http://127.0.0.1/' },
+        },
+        'https://acme.example/': { body: '<p>ok</p>' },
+      }),
+    });
+    expect(r.ok).toBe(true);
   });
 
   it('maps timeouts and network errors to reasons', async () => {
