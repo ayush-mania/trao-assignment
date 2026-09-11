@@ -7,20 +7,30 @@ import { QuestionsTab } from './questions-tab';
 import { RoleTab } from './role-tab';
 import { ScheduleTab } from './schedule-tab';
 
+const tab =
+  'h-full flex-none rounded-none border-0 px-1 text-sm group-data-horizontal/tabs:after:bottom-0 data-active:bg-transparent data-active:shadow-none';
+
 export function KitBuilder({ id, kit, meta }: { id: string; kit: Kit; meta: KitMeta }) {
   return (
     <Tabs defaultValue="questions">
-      <div className="sticky top-14 z-20 border-b bg-background/90 backdrop-blur md:top-0">
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="brief">Brief</TabsTrigger>
-          <TabsTrigger value="role">Role</TabsTrigger>
-          <TabsTrigger value="questions">
+      <div className="sticky top-14 z-20 bg-background/90 backdrop-blur md:top-0">
+        <TabsList
+          variant="line"
+          className="w-full justify-start gap-5 overflow-x-auto border-b p-0 group-data-horizontal/tabs:h-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <TabsTrigger value="brief" className={tab}>
+            Brief
+          </TabsTrigger>
+          <TabsTrigger value="role" className={tab}>
+            Role
+          </TabsTrigger>
+          <TabsTrigger value="questions" className={tab}>
             Questions <Count n={kit.questions.length} />
           </TabsTrigger>
-          <TabsTrigger value="flashcards">
+          <TabsTrigger value="flashcards" className={tab}>
             Flashcards <Count n={kit.flashcards.length} />
           </TabsTrigger>
-          <TabsTrigger value="schedule">
+          <TabsTrigger value="schedule" className={tab}>
             Schedule <Count n={kit.schedule.days.length} suffix="d" />
           </TabsTrigger>
         </TabsList>
@@ -46,7 +56,7 @@ export function KitBuilder({ id, kit, meta }: { id: string; kit: Kit; meta: KitM
 
 function Count({ n, suffix = '' }: { n: number; suffix?: string }) {
   return (
-    <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+    <span className="ml-1.5 rounded-full bg-muted px-1.5 py-px text-[11px] leading-4 tabular-nums text-muted-foreground">
       {n}
       {suffix}
     </span>
