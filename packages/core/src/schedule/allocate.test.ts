@@ -109,3 +109,40 @@ describe('buildSchedule', () => {
     expect(ids).toHaveLength(2);
   });
 });
+
+describe('balance (live PostHog kit, 2026-09-11)', () => {
+  it('spreads questions that all share one broad requirement instead of piling them on one day', () => {
+    const reqs: Requirement[] = ['r1', 'r2', 'r3', 'r4', 'r5'].map((id) => ({
+      id,
+      text: id,
+      kind: 'technical',
+      priority: 'must',
+    }));
+    // every question lists r1 first, plus one specific requirement — the shape real kits produce
+    let n = 0;
+    const qs: Question[] = [
+      'r2',
+      'r3',
+      'r4',
+      'r5',
+      'r2',
+      'r3',
+      'r4',
+      'r5',
+      'r2',
+      'r3',
+      'r4',
+      'r5',
+    ].map((r) => ({
+      id: `q${++n}`,
+      requirement_ids: ['r1', r],
+      category: 'technical',
+      prompt: 'p',
+      answer_outline: '',
+      difficulty: 2,
+    }));
+    const s = buildSchedule(5, reqs, qs);
+    const minutes = s.days.map((d) => d.minutes);
+    expect(Math.max(...minutes)).toBeLessThanOrEqual(Math.min(...minutes) * 2);
+  });
+});

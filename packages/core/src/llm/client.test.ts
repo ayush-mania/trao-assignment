@@ -96,6 +96,18 @@ describe('LlmClient retry / failover', () => {
     expect((await c.complete(req)).provider).toBe('a'); // cooldown over: primary again
   });
 
+  it('fails over after one retry on repeated 5xx when a fallback exists (live: Gemini 503s cost 20s each)', async () => {
+    const a = fakeProvider('a', [
+      new LlmError('server', '503', 'a'),
+      new LlmError('server', '503', 'a'),
+      '{"from":"a"}',
+    ]);
+    const b = fakeProvider('b', ['{"from":"b"}']);
+    const r = await client([a, b]).complete(req);
+    expect(r.provider).toBe('b');
+    expect(a.calls).toHaveLength(2);
+  });
+
   it('fails over to the next provider after the attempt budget is exhausted', async () => {
     const events: LlmEvent[] = [];
     const a = fakeProvider('a', Array(4).fill(new LlmError('rate_limit', '429', 'a')));

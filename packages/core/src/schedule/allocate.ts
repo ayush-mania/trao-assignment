@@ -69,10 +69,18 @@ function buildTopics(requirements: Requirement[], questions: Question[]): Topic[
   const orphan: Question[] = [];
   const known = new Set(requirements.map((r) => r.id));
   for (const q of questions) {
-    // A question covering several requirements is studied with its first one that still exists
-    // (the user may have deleted a requirement in the builder); none → company-and-fit topic.
-    const first = q.requirement_ids.find((id) => known.has(id));
-    if (first) byReq.set(first, [...(byReq.get(first) ?? []), q]);
+    // A question covering several requirements is studied with the one that has the fewest
+    // questions so far (ties → listed order). Real kits tag a broad requirement such as
+    // "3+ years" on almost every question; filing by first id piled 12 questions onto one day.
+    const candidates = q.requirement_ids.filter((id) => known.has(id));
+    const home = candidates.reduce<string | undefined>(
+      (best, id) =>
+        best === undefined || (byReq.get(id)?.length ?? 0) < (byReq.get(best)?.length ?? 0)
+          ? id
+          : best,
+      undefined,
+    );
+    if (home) byReq.set(home, [...(byReq.get(home) ?? []), q]);
     else orphan.push(q);
   }
   const topics: Topic[] = requirements.map((r) => {

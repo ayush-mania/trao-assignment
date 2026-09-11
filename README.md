@@ -109,8 +109,22 @@ two-line stub with a 60-day schedule, an unreachable site and an invalid URL.
 
 ## Deployment
 
-Web → Vercel · API → Railway · DB → MongoDB Atlas. Environment variables are listed in
-`.env.example` with what each is for.
+**Live:** web https://trao-assignment-web.vercel.app · API https://trao-assignment-hcbp.onrender.com
+(`/health`) · DB MongoDB Atlas M0.
+
+- **Web on Vercel** — project root `apps/web`, Node 24, env `NEXT_PUBLIC_API_URL=<api url>` (inlined
+  at build time, so a change needs a redeploy). Test files are excluded from the Next type check
+  because Vercel does not install the root devDependencies for the workspace.
+- **API on Render** (free web service) — root of the repo, build
+  `npm install; npm run build -w packages/core -w apps/api`, start `npm start -w apps/api`, health
+  check `/health`. Env: everything in `.env.example` plus `NODE_ENV=production`,
+  `WEB_ORIGIN=<web url>` (CORS + cookie), and **`NPM_CONFIG_PRODUCTION=false`** — with
+  `NODE_ENV=production` npm would skip the devDependencies the build needs. The free instance sleeps
+  after 15 minutes idle; the first request takes up to a minute and the web app says so.
+- **Cookies across sites** — web and API are on different domains, so the session cookie is
+  `SameSite=None; Secure`. Chrome and Firefox are fine; Safari's third-party cookie policy may block
+  it (documented limitation; a shared custom domain fixes it).
+- **Atlas** — network access must allow Render's egress (`0.0.0.0/0` on the free tier).
 
 ## Kit structure and validation
 

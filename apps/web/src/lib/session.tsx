@@ -2,7 +2,7 @@
 // Session state for the whole app: who is signed in, and a gate that sends visitors to /login.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ErrorBlock } from '@/components/ui/page-state';
 import { api, ApiError, type User } from './api';
 
@@ -51,11 +51,36 @@ export function RequireSession({ children }: { children: React.ReactNode }) {
         }
       />
     );
-  if (loading || !user)
-    return <p className="p-8 text-sm text-muted-foreground">Checking your session…</p>;
+  if (loading || !user) return <SessionSkeleton />;
   return <>{children}</>;
 }
 
 export function ErrorState({ message, action }: { message: string; action?: React.ReactNode }) {
   return <ErrorBlock message={message} action={action} />;
+}
+
+/** Loading state that, after a few seconds, explains the wait: the free API host sleeps when idle. */
+function SessionSkeleton() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div
+      className="space-y-4"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Checking your session"
+    >
+      <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+      <div className="h-32 animate-pulse rounded-xl bg-muted" />
+      {slow && (
+        <p className="text-sm text-muted-foreground">
+          Waking up the server — it sleeps when idle on free hosting. This can take up to a minute
+          the first time.
+        </p>
+      )}
+    </div>
+  );
 }

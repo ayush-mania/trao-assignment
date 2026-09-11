@@ -125,6 +125,8 @@ export class LlmClient {
             this.maxBackoffMs,
             e.retryAfterMs ?? this.baseBackoffMs * 2 ** (attempt - 1),
           );
+          // A provider answering 5xx repeatedly is down for now; one retry, then try the next one.
+          if (hasFallback && e.kind === 'server' && attempt >= 2) break;
           if (hasFallback && e.kind === 'rate_limit' && waitMs >= this.failoverAfterMs) {
             const untilMs = this.now() + waitMs;
             this.cooldownUntil.set(provider.name, untilMs);

@@ -53,7 +53,11 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
       headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
     });
   } catch {
-    throw new ApiError(0, 'NETWORK', 'Cannot reach the server. Is the API running?');
+    throw new ApiError(
+      0,
+      'NETWORK',
+      'Cannot reach the server. It may be waking up — try again in a moment.',
+    );
   }
   if (res.status === 204) return undefined as T;
   const body = (await res.json().catch(() => null)) as (T & Partial<ApiErrorBody>) | null;
