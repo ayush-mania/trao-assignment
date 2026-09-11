@@ -28,8 +28,16 @@ export class Runner {
     this.log = opts.log ?? (() => {});
   }
 
-  /** Called on boot: anything left queued/running by a previous process is picked up again. */
+  /**
+   * Called on boot: anything left queued/running by a previous process is picked up again. A
+   * booting process knows no runner in THIS process holds a lock, so locks are cleared here —
+   * otherwise a fast restart (seconds) would leave kits stranded behind a "fresh" lock for 5 min.
+   */
   async recover(): Promise<number> {
+    await KitModel.updateMany(
+      { status: { $in: ['queued', 'running'] } },
+      { $set: { runLock: null } },
+    );
     const pending = await KitModel.find({ status: { $in: ['queued', 'running'] } })
       .select('_id')
       .lean();
@@ -86,10 +94,31 @@ export class Runner {
 
       const status =
         after.status === 'done' ? 'done' : after.status === 'failed' ? 'failed' : 'running';
-      await KitModel.updateOne(
-        { _id: id },
-        { $set: { state: after, status, kit: after.artifacts.kit ?? null, runLock: null } },
-      );
+      try {
+        await KitModel.updateOne(
+          { _id: id },
+          { $set: { state: after, status, kit: after.artifacts.kit ?? null, runLock: null } },
+        );
+      } catch (err) {
+        // A persist failure must not strand the kit behind its lock: mark it failed so the user
+        // gets a retry, keeping the last persisted state (this step's work is lost, not the run).
+        this.log(`runner: kit ${id} persist failed: ${(err as Error).message}`);
+        await KitModel.updateOne(
+          { _id: id },
+          {
+            $set: {
+              status: 'failed',
+              runLock: null,
+              'state.status': 'failed',
+              'state.error': {
+                code: 'INTERNAL',
+                message: 'could not save progress; retry to continue',
+              },
+            },
+          },
+        ).catch(() => {});
+        return;
+      }
       if (status !== 'running') return;
     }
   }

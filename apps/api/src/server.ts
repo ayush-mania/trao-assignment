@@ -6,9 +6,10 @@ import { Runner } from './services/runner.js';
 
 async function main(): Promise<void> {
   await connectDb(config.mongodbUri);
+  const llm = llmClientFromEnv(process.env, (e) => console.log(`llm ${e.type}`, JSON.stringify(e)));
   const runner = new Runner({
     deps: {
-      llm: llmClientFromEnv(process.env, (e) => console.log(`llm ${e.type}`, JSON.stringify(e))),
+      llm,
       crawl: { policy: { allowPrivate: config.allowPrivateUrls } },
     },
     concurrency: config.runnerConcurrency,
@@ -17,7 +18,7 @@ async function main(): Promise<void> {
   const recovered = await runner.recover();
   if (recovered) console.log(`runner: resumed ${recovered} unfinished kit(s)`);
 
-  const app = createApp(runner);
+  const app = createApp(runner, llm);
   app.listen(config.port, () => console.log(`api listening on :${config.port}`));
 }
 

@@ -1,5 +1,6 @@
 // Structured errors for the interface (Section 13): { error: { code, message } }, never a stack trace.
 import type { NextFunction, Request, Response } from 'express';
+import { LlmError } from '@trao/core';
 import { AuthError } from '../services/auth.js';
 
 export class HttpError extends Error {
@@ -24,6 +25,15 @@ export function errorHandler(
   }
   if (err instanceof AuthError) {
     res.status(err.status).json({ error: { code: 'AUTH', message: err.message } });
+    return;
+  }
+  if (err instanceof LlmError) {
+    res.status(503).json({
+      error: {
+        code: 'LLM_UNAVAILABLE',
+        message: 'The model is unavailable right now; try again shortly',
+      },
+    });
     return;
   }
   if (err instanceof SyntaxError && 'body' in err) {

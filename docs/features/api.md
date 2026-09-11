@@ -1,10 +1,13 @@
 # Feature: API — auth, kits, runner
 
 > Routes: `POST /auth/register` `POST /auth/login` `POST /auth/logout` `GET /auth/me` ·
-> `GET /kits` `POST /kits` `POST /kits/bulk` `GET /kits/:id` `POST /kits/:id/retry` `DELETE /kits/:id` · `GET /health`
+> `GET /kits` `POST /kits` `POST /kits/bulk` `GET /kits/:id` `POST /kits/:id/retry` `DELETE /kits/:id` · `GET /health` ·
+> builder: `PATCH /kits/:id/questions/:qid` `PATCH /kits/:id/flashcards/:fid` `PATCH /kits/:id/brief` `POST /kits/:id/questions`
+> `POST /kits/:id/flashcards` `DELETE /kits/:id/items/:itemId` `PUT /kits/:id/order` `POST /kits/:id/questions/:qid/move`
+> `POST /kits/:id/items/:itemId/pin` `POST /kits/:id/regenerate`
 > Source: `apps/api/src` — `config` · `db` · `models/{user,session,kit}` · `middleware/{auth,validate,errors}` ·
 > `services/{auth,kits,runner}` · `routes/{auth,kits}` · `app` (factory) · `server` (boot)
-> Decisions: ADR 0001, 0002, 0008 (proposed)
+> Decisions: ADR 0001, 0002, 0008
 
 **Every kit belongs to one user and is only ever queried with that user's id.** There is no admin path.
 
@@ -44,11 +47,25 @@ persists the new state, clears the lock. Consequences:
 - a `failed` kit can be retried with `POST /kits/:id/retry`: the failed step record is dropped and
   the run continues from there with the artifacts of earlier steps intact.
 
+## Editing and regenerating (the builder)
+
+Every builder route loads `{ kit, meta }`, applies a **pure** operation from `packages/core/src/builder`
+(edit, add, delete, reorder, move, pin, merge-regenerated), validates the result with `validateKit`
+and persists both. Responses return the new `{ kit, meta }` so the UI can replace its state in one go.
+`POST /kits/:id/regenerate { section }` with `section` ∈ `company_brief` | `schedule` | `flashcards` |
+`questions:<category>` re-runs only that section's generator using the research persisted in the run
+state, then merges per ADR 0008: edited, manual and pinned items survive in place. A model outage
+during regeneration is a 503 `LLM_UNAVAILABLE` and nothing changes. Builder routes need a finished
+kit (409 `NOT_READY` otherwise). Observed on a real run: after regenerating `technical`, the edited
+`q1`, pinned `q2` and manual `q14` stayed; `q3` was replaced by `q15–q17` at gen 2.
+
 ## Errors
 
 Always `{ error: { code, message, issues? } }`: `VALIDATION` (400, with zod issue paths),
 `UNAUTHENTICATED` (401), `AUTH` (401/409), `NOT_FOUND` (404 — also for another user's kit, so ids
-leak nothing), `NOT_FAILED` (409 on retrying a kit that did not fail), `INTERNAL` (500, no stack).
+leak nothing), `NOT_FAILED` (409 on retrying a kit that did not fail), `NOT_READY` (409, builder on an unfinished kit),
+`KIT_INVALID` (422, an edit would break Appendix A — should not happen, reported not hidden),
+`LLM_UNAVAILABLE` (503), `INTERNAL` (500, no stack).
 
 ## Local development
 

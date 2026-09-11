@@ -280,9 +280,20 @@ means the same step never runs twice. A duplicate submission returns the existin
 Local: `docker compose up -d mongo` then `npm run dev -w apps/api`. Production: MongoDB Atlas via
 `MONGODB_URI`, API on Railway, cookie `SameSite=None; Secure` because the web app is on another site.
 
-## Edit state and practice mode
+## Generated, edited and pinned state
 
-_Land with TRAO-19 to TRAO-22; each adds its section here and a `docs/features/` page._
+Builder state lives **beside** the Appendix A kit, never inside it, so the batch output stays exact:
+`meta.items[id] = { origin: generated | edited | manual, pinned, gen }`, `meta.order[category]` for
+display order, per-section generation counters and monotonic id counters. Regenerating one section
+(the brief, one question category, flashcards, or the schedule) bumps that section's counter and
+replaces only items that are generated, unpinned and from an older generation — a question the user
+wrote, edited or pinned survives in place, and nothing outside the section is touched. Coverage and
+the schedule are recomputed deterministically after any question change, and every write is
+validated before it is saved. Full rule and the reasoning: [ADR 0008](docs/decisions/0008-edit-state-model.md).
+
+## Practice mode
+
+_Lands with TRAO-22._
 
 ## Known limitations
 

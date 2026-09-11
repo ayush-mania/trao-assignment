@@ -7,8 +7,10 @@ import { errorHandler, notFound } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
 import { kitsRouter } from './routes/kits.js';
 import type { Runner } from './services/runner.js';
+import { builderRouter } from './routes/builder.js';
+import type { LlmClient } from '@trao/core';
 
-export function createApp(runner: Runner): express.Express {
+export function createApp(runner: Runner, llm: LlmClient): express.Express {
   const app = express();
   app.set('trust proxy', 1); // Railway terminates TLS in front of us
   app.use(cors({ origin: config.webOrigin, credentials: true }));
@@ -17,6 +19,7 @@ export function createApp(runner: Runner): express.Express {
 
   app.get('/health', (_req, res) => res.json({ ok: true }));
   app.use('/auth', authRouter);
+  app.use('/kits/:id', builderRouter(llm));
   app.use('/kits', kitsRouter(runner));
 
   app.use(notFound);

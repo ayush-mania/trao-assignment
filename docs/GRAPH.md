@@ -22,12 +22,15 @@ flowchart LR
     coverage["coverage/<br/>findGaps (set difference)<br/>closeCoverage (≤3 passes)"]
     schedule["schedule/<br/>allocate (deterministic)"]
     pipeline["pipeline/<br/>state (RunState, STEPS)<br/>run (advance, runToCompletion, fingerprint)"]
+    builder["builder/<br/>meta (origin, pinned, gen, order, counters)<br/>edits (pure ops + merge rule)"]
   end
   cli["scripts/evaluate.ts<br/>npm run evaluate"] --> pipeline
   api["apps/api (Express 5 + Mongoose)<br/>auth · kits · runner<br/>docs/features/api.md"] --> pipeline
   web["apps/web (Next 16 + shadcn)<br/>builder · practice — TRAO-20+"] --> api
   fixtures["fixtures/sites + scripts/serve-fixtures.ts<br/>localhost:8099 acme · nohire"] -.tests & batch demo.-> retrieval
   pipeline --> extraction & retrieval & generation & coverage & schedule & validation
+  builder --> coverage & schedule & validation
+  api --> builder
   extraction & generation & coverage --> llm
 ```
 
