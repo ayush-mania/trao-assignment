@@ -36,6 +36,41 @@ describe('derivePriority (wording rules)', () => {
     expect(derivePriority({ jd, evidence: 'Python' })).toBe('must');
   });
 
+  it.each([
+    [
+      '5 plus years is not a nice-to-have',
+      'Requirements:\n- 5 plus years of experience with Python',
+      '5 plus years of experience with Python',
+      'must',
+    ],
+    [
+      'depth adjectives do not beat a nice heading',
+      'Nice to have:\n- Strong knowledge of Kubernetes',
+      'Strong knowledge of Kubernetes',
+      'nice',
+    ],
+    [
+      'the list occurrence wins over an intro mention',
+      'We use Kubernetes and Go across the platform.\n\nNice to have:\n- Kubernetes',
+      'Kubernetes',
+      'nice',
+    ],
+    [
+      'unbulleted lines are not headings',
+      'Nice to have:\nTerraform experience\nGo experience\n- Experience with Rust',
+      'Experience with Rust',
+      'nice',
+    ],
+    [
+      'is a plus reads as nice',
+      'Requirements:\n- Python\n- Experience with Rust is a plus',
+      'Experience with Rust is a plus',
+      'nice',
+    ],
+  ])('%s', (_name, jd, evidence, expected) => {
+    expect(derivePriority({ jd, evidence })).toBe(expected);
+  });
+
   it('indexOfLoose ignores case and whitespace differences', () => {
     expect(indexOfLoose('Foo   bar\n baz', 'foo bar baz')).toBe(0);
     expect(indexOfLoose('abc', 'zzz')).toBe(-1);

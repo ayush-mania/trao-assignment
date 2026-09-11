@@ -2,9 +2,10 @@
 // We look at the sentence around the evidence and at the nearest heading above it.
 
 const NICE_WORDS =
-  /\b(nice[- ]to[- ]have|bonus|plus|preferred|preferably|ideally|desirable|advantage|a big plus|would be great|optional|good to have|familiarity with|exposure to)\b/i;
-const MUST_WORDS =
-  /\b(required|requirements?|must|need(?:ed|s)?|minimum|essential|mandatory|you have|you bring|you will need|strong|proven|expert)\b/i;
+  /\b(nice[- ]to[- ]have|bonus|(?:a|is a|big|huge|definite) plus|plus:|preferred|preferably|ideally|desirable|advantage|would be great|optional|good to have|familiarity with|exposure to)\b/i;
+// Only words that state requiredness. Depth adjectives (strong, proven, expert) describe level, not
+// whether the item is required, so they must not beat a "Nice to have" heading.
+const MUST_WORDS = /\b(required|must|mandatory|essential|minimum|non-negotiable)\b/i;
 const NICE_HEADING =
   /\b(nice[- ]to[- ]have|bonus|preferred|plus|desirable|good to have|would be great)\b/i;
 const MUST_HEADING =
@@ -26,7 +27,7 @@ export interface PriorityContext {
  *  4. default must (postings list requirements far more often than perks)
  */
 export function derivePriority({ jd, evidence }: PriorityContext): Priority {
-  const idx = indexOfLoose(jd, evidence);
+  const idx = bestOccurrence(jd, evidence);
   if (idx < 0) return 'must';
   const sentence = sentenceAround(jd, idx, evidence.length);
   if (NICE_WORDS.test(sentence)) return 'nice';
@@ -35,6 +36,36 @@ export function derivePriority({ jd, evidence }: PriorityContext): Priority {
   if (heading && NICE_HEADING.test(heading)) return 'nice';
   if (heading && MUST_HEADING.test(heading)) return 'must';
   return 'must';
+}
+
+/**
+ * The evidence phrase may appear several times (e.g. "Kubernetes" in the intro and again under
+ * "Nice to have"). Prefer the occurrence that sits in a list item, since that is where the posting
+ * states it as a requirement; otherwise the first occurrence.
+ */
+function bestOccurrence(jd: string, evidence: string): number {
+  const occurrences = allOccurrences(jd, evidence);
+  if (occurrences.length === 0) return -1;
+  const inList = occurrences.find((i) => /^\s*[-*•·\u2022\d.)]+\s*/.test(lineOf(jd, i)));
+  return inList ?? occurrences[0]!;
+}
+
+function allOccurrences(jd: string, evidence: string): number[] {
+  const out: number[] = [];
+  let from = 0;
+  for (let guard = 0; guard < 20; guard++) {
+    const i = indexOfLoose(jd.slice(from), evidence);
+    if (i < 0) break;
+    out.push(from + i);
+    from = from + i + Math.max(1, evidence.length);
+  }
+  return out;
+}
+
+function lineOf(text: string, idx: number): string {
+  const start = text.lastIndexOf('\n', idx) + 1;
+  const end = text.indexOf('\n', idx);
+  return text.slice(start, end < 0 ? text.length : end);
 }
 
 /** Case- and whitespace-insensitive search; returns the index in `haystack` or -1. */
@@ -73,16 +104,10 @@ function headingAbove(text: string, idx: number): string | null {
   const before = text.slice(0, idx).split('\n');
   for (let i = before.length - 2; i >= 0 && i > before.length - 40; i--) {
     const line = before[i]!.trim();
-    if (!line) continue;
-    // A heading is a short line without a bullet, often ending with ':' or in Title Case.
-    if (
-      line.length <= 60 &&
-      !/^[-*•\d]/.test(line) &&
-      (line.endsWith(':') || /^[A-Z]/.test(line)) &&
-      !/[.!?]$/.test(line)
-    ) {
-      return line;
-    }
+    if (!line || line.length > 60) continue;
+    // Only a line that reads as a section heading counts; a plain requirement line that lost its
+    // bullet on paste must not become the "heading" for everything below it.
+    if (NICE_HEADING.test(line) || MUST_HEADING.test(line)) return line;
   }
   return null;
 }

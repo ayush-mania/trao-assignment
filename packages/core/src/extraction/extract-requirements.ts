@@ -10,19 +10,20 @@ import { derivePriority, indexOfLoose } from './priority.js';
 export const THIN_JD_CHARS = 200;
 
 const ProposedSchema = z.object({
-  title: z.string().default(''),
-  seniority: z.string().default(''),
-  location: z.string().default(''),
-  company: z.string().default(''),
-  responsibilities: z.array(z.string()).default([]),
+  title: z.string().max(200).default(''),
+  seniority: z.string().max(60).default(''),
+  location: z.string().max(120).default(''),
+  company: z.string().max(120).default(''),
+  responsibilities: z.array(z.string().max(300)).max(25).default([]),
   requirements: z
     .array(
       z.object({
-        text: z.string().min(1),
-        evidence: z.string().min(1),
+        text: z.string().trim().min(1).max(300),
+        evidence: z.string().trim().min(4).max(300),
         kind: z.enum(REQUIREMENT_KINDS),
       }),
     )
+    .max(60)
     .default([]),
 });
 
