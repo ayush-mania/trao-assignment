@@ -8,14 +8,14 @@ Built for Trao's full-stack engineering assessment.
 
 ## Stack
 
-| Layer    | Choice                                                                     | Why                                                                                          |
-| -------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Frontend | Next.js (App Router) + Tailwind + shadcn/ui                                | Preferred stack; shadcn gives accessible, keyboard-navigable primitives                      |
-| Backend  | Node + Express (TypeScript)                                                | Preferred stack; long-lived process on Railway runs the generation pipeline                  |
-| Pipeline | `packages/core` — pure TypeScript, no HTTP/DB                              | Same code path for the web app and the batch CLI (Section 9)                                 |
-| Database | MongoDB Atlas                                                              | Preferred stack                                                                              |
-| LLM      | Gemini (`gemini-3.6-flash`) primary, Groq (`openai/gpt-oss-120b`) fallback | Both free tiers; adapter fails over on a long Retry-After, sustained 5xx or a retired model  |
-| Scraping | `undici` fetch + `cheerio` + `robots-parser`                               | No headless browser: careers/about pages are server-rendered; local fixture sites are static |
+| Layer    | Choice                                                                             | Why                                                                                                                      |
+| -------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Frontend | Next.js (App Router) + Tailwind + shadcn/ui                                        | Preferred stack; shadcn gives accessible, keyboard-navigable primitives                                                  |
+| Backend  | Node + Express (TypeScript)                                                        | Preferred stack; long-lived process on Railway runs the generation pipeline                                              |
+| Pipeline | `packages/core` — pure TypeScript, no HTTP/DB                                      | Same code path for the web app and the batch CLI (Section 9)                                                             |
+| Database | MongoDB Atlas                                                                      | Preferred stack                                                                                                          |
+| LLM      | Gemini `gemini-3.5-flash-lite` → Gemini `gemma-4-26b` → Groq `openai/gpt-oss-120b` | All free tiers; chosen by measured limits (see LLM layer); client fails over on long Retry-After, 5xx or a retired model |
+| Scraping | `undici` fetch + `cheerio` + `robots-parser`                                       | No headless browser: careers/about pages are server-rendered; local fixture sites are static                             |
 
 Everything is TypeScript. Dependencies are kept at latest, with two deliberate holds: TypeScript 6.x (typescript-eslint does not support 7.0 yet) and ESLint 9.x (eslint-plugin-react is not ESLint 10 compatible yet).
 
@@ -105,11 +105,35 @@ questions, one general-prep day) is valid by design — reporting "little to ext
 `packages/core/src/llm`. Providers (Gemini via REST, Groq via its OpenAI-compatible endpoint; no SDKs)
 only turn a request into text or a typed error. `LlmClient` adds everything the free tiers force on us:
 
-- self rate limiting (`LLM_RPM` / `LLM_TPM` sliding window) so we slow down before the provider does;
+- a rate limiter **per provider** (requests and estimated tokens per minute) so we slow down before
+  the provider does, and an idle provider is never throttled by a busy one;
 - retry with exponential backoff (2s, 4s, 8s … capped 60s) that honours `Retry-After` / Gemini's `retryDelay`;
-- failover Gemini → Groq once a provider's attempt budget (4) is spent or it returns a non-retryable error;
+- **cooldown failover**: when a provider asks us to wait 10s or more and another provider exists, we
+  fail over immediately and skip the cooling provider until its window passes;
+- failover down the chain once a provider's attempt budget (4) is spent or it returns a non-retryable error;
 - `completeJson(schema)`: JSON is extracted (fences, prose, trailing commas repaired) and validated with zod;
-  one repair round-trip re-asks with the concrete error, a second failure is an error the step reports.
+  common drift (null for a string, a bullet array for a paragraph, a bare root array) is accepted
+  directly; anything else gets one repair round-trip with the concrete error, a second failure is an
+  error the step reports.
+
+### Models and free-tier limits (measured 2026-09-11)
+
+Neither vendor publishes per-model free numbers in its docs (both point at the account dashboard),
+so these were read from the APIs themselves: Gemini's 429 bodies name the quota and its value,
+Groq returns `x-ratelimit-*` headers on every call.
+
+| Provider / model               | Free limit that bites                                                     | Role                             |
+| ------------------------------ | ------------------------------------------------------------------------- | -------------------------------- |
+| Gemini `gemini-3.5-flash-lite` | 15 requests/min                                                           | primary                          |
+| Gemini `gemma-4-26b-a4b-it`    | ≥20 requests/min (no 429 in a 20-burst); no thinking config, no JSON mode | fallback 1                       |
+| Groq `openai/gpt-oss-120b`     | 30 requests/min but **8,000 tokens/min**, 1,000 requests/day              | fallback 2                       |
+| Gemini `gemini-3.6-flash`      | **20 requests/day**                                                       | not usable: one kit is 7–9 calls |
+| Gemini `gemini-3.5-flash`      | 5 requests/min                                                            | too slow                         |
+| Groq `llama-3.3-70b-versatile` | retired (404)                                                             | —                                |
+
+A five-case batch against the fixture sites completes in **~135 s** on this chain, with no
+failovers. Every model id and limit is an `.env` knob (`GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`,
+`GROQ_MODEL`, `*_RPM`, `*_TPM`).
 
 Untrusted text (pasted JD, crawled pages, search snippets) is always wrapped by `wrapUntrusted()` in a
 labelled `<document>` block, and the system prompt states it is data, not instructions.
