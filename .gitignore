@@ -7,7 +7,9 @@ tmp/
 node_modules/
 dist/
 .next/
-coverage/
+# test coverage reports only (packages/core/src/coverage is source)
+**/coverage/
+!packages/core/src/coverage/
 *.log
 
 # env
