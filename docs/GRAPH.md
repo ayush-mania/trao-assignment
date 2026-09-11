@@ -24,7 +24,7 @@ flowchart LR
     pipeline["pipeline/<br/>state (RunState, STEPS)<br/>run (advance, runToCompletion, fingerprint)"]
   end
   cli["scripts/evaluate.ts<br/>npm run evaluate"] --> pipeline
-  api["apps/api (Express 5)<br/>auth · kits · runner — TRAO-17"] --> pipeline
+  api["apps/api (Express 5 + Mongoose)<br/>auth · kits · runner<br/>docs/features/api.md"] --> pipeline
   web["apps/web (Next 16 + shadcn)<br/>builder · practice — TRAO-20+"] --> api
   fixtures["fixtures/sites + scripts/serve-fixtures.ts<br/>localhost:8099 acme · nohire"] -.tests & batch demo.-> retrieval
   pipeline --> extraction & retrieval & generation & coverage & schedule & validation
@@ -55,7 +55,7 @@ stateDiagram-v2
 ```
 
 - `advance(state, deps)` runs exactly one step and returns new plain-JSON state (persistable, resumable).
-- `runToCompletion()` loops it — used by the CLI today and by the API runner (TRAO-18).
+- `runToCompletion()` loops it (CLI); the API `Runner` calls `advance()` one step at a time with an atomic per-kit lock and persists after each (`docs/features/api.md`).
 - Research steps never fail the run; they record `gaps[]` and a `skipped` step status.
 - `steps[]` carries `{name, status, ms, notes[]}` — the progress UI and the batch log read this.
 
@@ -116,6 +116,9 @@ Each provider has its own RPM/TPM bucket (`.env`). Output parsed via `extractJso
 
 ## 7 · Open questions
 
+- **Stale `dist` trap** — `@trao/core` exports `dist/` for `import`; vitest in `apps/api` aliases the package to `src/`
+  and `tsx --conditions=source` does the same in dev, otherwise a stale build shadows the source (two `LlmError`
+  classes). Production builds core first (`npm run build` at the root).
 - **Edit / pinned state model (TRAO-19)** — per-item `origin` + `pinned` + section `gen`, kept _alongside_ the
   Appendix A kit (not inside it) so batch output stays pure. To be locked when the API lands.
 - **Practice ordering (TRAO-22)** — confidence-weighted sort with recency tiebreak; proper SRS intervals rejected

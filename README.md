@@ -264,9 +264,25 @@ The sections above are the "what". The "why" and the current shape of the system
 - [`docs/features/`](docs/features/pipeline.md) — per-feature walkthroughs, starting with the pipeline
   on a real run.
 
-## Edit state, practice mode, API
+## Backend
 
-_Land with TRAO-17 to TRAO-22; each adds its section here and a `docs/features/` page._
+`apps/api` — Express 5, MongoDB (Mongoose), no SDK-heavy dependencies. Concerns are separate files:
+`config` (all env access, fails fast), `models` (User, Session, Kit), `middleware` (session cookie →
+`req.user`; zod body validation; structured errors), `services` (auth with `scrypt` + server-side
+sessions; kits scoped by user with 24 h duplicate reuse; the runner), `routes`, and an `app` factory
+the tests build with a fake LLM. Full walkthrough: [`docs/features/api.md`](docs/features/api.md).
+
+What happens when generation takes ninety seconds, fails halfway, or is triggered twice: the kit
+document stores the pipeline state after **every step**, the web app polls it, a failed run can be
+retried from the failed step, a crashed process resumes on boot, and an atomic per-document lock
+means the same step never runs twice. A duplicate submission returns the existing kit.
+
+Local: `docker compose up -d mongo` then `npm run dev -w apps/api`. Production: MongoDB Atlas via
+`MONGODB_URI`, API on Railway, cookie `SameSite=None; Secure` because the web app is on another site.
+
+## Edit state and practice mode
+
+_Land with TRAO-19 to TRAO-22; each adds its section here and a `docs/features/` page._
 
 ## Known limitations
 

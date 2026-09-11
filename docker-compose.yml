@@ -1,0 +1,15 @@
+# Local development only. Production uses MongoDB Atlas (MONGODB_URI).
+services:
+  mongo:
+    image: mongo:8.2 # 8.0 cannot start on Linux kernel 6.19+ (SERVER-121912)
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  mongo-data:
