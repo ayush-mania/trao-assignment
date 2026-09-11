@@ -18,9 +18,21 @@ jobs:
     name: format, lint, typecheck, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:8.2
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       NEXT_TELEMETRY_DISABLED: 1
       NEXT_PUBLIC_API_URL: http://localhost:4000
+      MONGODB_URI: mongodb://localhost:27017/trao-test
+      SESSION_SECRET: ci-only-not-a-secret
     steps:
       - uses: actions/checkout@v7
 
