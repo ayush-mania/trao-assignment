@@ -8,10 +8,12 @@ const root = join(process.cwd(), 'fixtures', 'sites');
 const port = Number(process.env.FIXTURES_PORT ?? 8099);
 
 const server = createServer(async (req, res) => {
-  const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')).replace(
-    /\\/g,
-    '/',
-  );
+  let path: string;
+  try {
+    path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')).replace(/\\/g, '/');
+  } catch {
+    return end(res, 400, 'bad encoding');
+  }
   if (path.includes('..')) return end(res, 400, 'bad path');
   const candidates = path.endsWith('/')
     ? [`${path}index.html`, `${path.slice(0, -1)}.html`]
