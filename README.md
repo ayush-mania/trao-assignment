@@ -61,6 +61,34 @@ the LLM keys from `.env` (no database, no running server). _Status: not implemen
 Web → Vercel · API → Railway · DB → MongoDB Atlas. Environment variables are listed in
 `.env.example` with what each is for.
 
+## Kit structure and validation
+
+The kit is exactly Appendix A (`packages/core/src/validation/kit-schema.ts`). `validateKit()` runs
+before a kit is persisted or written by the batch command and checks two things:
+
+- **shape** — zod schema with exact field names, enums (`kind`, `priority`, `category`), integer
+  `difficulty` 1–3, integer `minutes`, ISO `researched_at`; ids are `r<n>`/`q<n>`/`f<n>` and are assigned by
+  our code, never by the model, so the prefix is enforced per list; unknown keys are stripped so output is canonical;
+- **integrity** — ids unique per list; every `requirement_ids` / `question_ids` / `uncovered_requirement_ids`
+  entry refers to an existing item; `schedule.days` has exactly `days_available` entries numbered 1..N.
+
+Failures are returned as `{ path, message }` pairs, never thrown. A thin kit (no requirements, no
+questions, one general-prep day) is valid by design — reporting "little to extract" is a valid outcome.
+
+## LLM layer
+
+`packages/core/src/llm`. Providers (Gemini via REST, Groq via its OpenAI-compatible endpoint; no SDKs)
+only turn a request into text or a typed error. `LlmClient` adds everything the free tiers force on us:
+
+- self rate limiting (`LLM_RPM` / `LLM_TPM` sliding window) so we slow down before the provider does;
+- retry with exponential backoff (2s, 4s, 8s … capped 60s) that honours `Retry-After` / Gemini's `retryDelay`;
+- failover Gemini → Groq once a provider's attempt budget (4) is spent or it returns a non-retryable error;
+- `completeJson(schema)`: JSON is extracted (fences, prose, trailing commas repaired) and validated with zod;
+  one repair round-trip re-asks with the concrete error, a second failure is an error the step reports.
+
+Untrusted text (pasted JD, crawled pages, search snippets) is always wrapped by `wrapUntrusted()` in a
+labelled `<document>` block, and the system prompt states it is data, not instructions.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
