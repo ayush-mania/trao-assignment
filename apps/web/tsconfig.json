@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "customConditions": ["source"]
   },
   "include": [
     "next-env.d.ts",

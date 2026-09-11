@@ -35,6 +35,7 @@ flowchart LR
 ```
 
 Dependency rule: arrows only point inward to `core`; `core` never imports from `apps/` or `scripts/`.
+`apps/web` imports **types only** from core (core's runtime needs Node modules).
 `testing/` inside core (fake LLM, fixture fetch, valid kit) is test-only and excluded from the build.
 
 ## 2 · The run: one state, ten steps

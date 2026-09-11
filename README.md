@@ -291,9 +291,17 @@ wrote, edited or pinned survives in place, and nothing outside the section is to
 the schedule are recomputed deterministically after any question change, and every write is
 validated before it is saved. Full rule and the reasoning: [ADR 0008](docs/decisions/0008-edit-state-model.md).
 
-## Practice mode
+## Frontend
 
-_Lands with TRAO-22._
+`apps/web` — Next.js 16 App Router, Tailwind 4, shadcn/ui (Base UI), TanStack Query. It imports only
+**types** from `@trao/core`. Session gate with `?next=` return, kit list, single and bulk kit creation,
+and a live ten-step generation timeline that polls the persisted run state every 2 s and offers
+"Retry from the failed step" on failure. Explicit loading, empty and error states everywhere; real
+links and forms so everything is keyboard-reachable. Walkthrough: [`docs/features/web.md`](docs/features/web.md).
+
+## Builder and practice mode
+
+_Land with TRAO-21 and TRAO-22._
 
 ## Known limitations
 
