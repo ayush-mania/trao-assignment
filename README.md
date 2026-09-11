@@ -132,6 +132,23 @@ so the kit can cite it. A failing source is recorded and skipped. Glassdoor, Bli
 automated access and are not attempted. Zero results is reported as such — the brief is explicit
 that an honest "nothing found" beats an invented brief.
 
+## Requirement extraction
+
+`packages/core/src/extraction`. One schema-locked LLM call proposes title, seniority, responsibilities
+and requirements, and for every requirement an `evidence` phrase copied verbatim from the JD. Then code
+decides:
+
+- **Anti-invention gate** — a requirement whose evidence cannot be found in the JD (case- and
+  whitespace-insensitive) is dropped and logged. The model cannot add a requirement the posting
+  does not contain.
+- **must / nice from wording, not opinion** — the sentence around the evidence is checked for
+  explicit phrasing ("nice to have", "bonus", "preferred", "ideally" → `nice`; "required", "must",
+  "minimum", "strong" → `must`), then the nearest heading above it ("Nice to have" vs
+  "Requirements"), then default `must`. "Required" and "bonus points for" are never the same thing.
+- **Ids** `r1…` assigned in code; near-duplicates dropped.
+- **Thin JD** — under 200 characters or fewer than two requirements sets `thin: true` with a note that
+  the kit is deliberately thin. An empty requirement list is a valid answer.
+
 ## Architecture, retrieval, sequencing, edit state, schedule, decisions
 
 _Filled in as each part lands._
