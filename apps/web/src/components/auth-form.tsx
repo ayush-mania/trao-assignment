@@ -1,4 +1,6 @@
 'use client';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -24,7 +26,7 @@ function Inner({ mode }: { mode: 'login' | 'register' }) {
   const [busy, setBusy] = useState(false);
   const next = params.get('next') ?? '/kits';
   useEffect(() => {
-    if (user) router.replace('/kits'); // already signed in: the form has no purpose
+    if (user) router.replace('/kits');
   }, [user, router]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -45,58 +47,68 @@ function Inner({ mode }: { mode: 'login' | 'register' }) {
     }
   }
 
+  const isLogin = mode === 'login';
   return (
-    <form
-      onSubmit={onSubmit}
-      className="mx-auto mt-10 w-full max-w-sm space-y-4"
-      aria-describedby={error ? 'auth-error' : undefined}
-    >
-      <h1 className="text-2xl font-semibold">
-        {mode === 'login' ? 'Sign in' : 'Create your account'}
+    <div className="mx-auto max-w-sm py-8 md:py-16">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {isLogin ? 'Welcome back' : 'Create your account'}
       </h1>
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          minLength={8}
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          required
-        />
-        {mode === 'register' && (
-          <p className="text-xs text-muted-foreground">At least 8 characters.</p>
-        )}
-      </div>
-      {error && (
-        <p id="auth-error" role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      <Button type="submit" className="w-full" disabled={busy}>
-        {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
-      </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        {mode === 'login' ? (
-          <>
-            No account?{' '}
-            <a className="underline" href="/register">
-              Create one
-            </a>
-          </>
-        ) : (
-          <>
-            Already registered?{' '}
-            <a className="underline" href="/login">
-              Sign in
-            </a>
-          </>
-        )}
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        {isLogin ? 'Sign in to get back to your kits.' : 'Your kits are private to your account.'}
       </p>
-    </form>
+      <form
+        onSubmit={onSubmit}
+        className="mt-8 space-y-5"
+        aria-describedby={error ? 'auth-error' : undefined}
+        noValidate={false}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            autoFocus
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            minLength={8}
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
+            required
+          />
+          {!isLogin && <p className="text-xs text-muted-foreground">At least 8 characters.</p>}
+        </div>
+        {error && (
+          <p
+            id="auth-error"
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
+            {error}
+          </p>
+        )}
+        <Button type="submit" size="lg" className="w-full" disabled={busy}>
+          {busy && <Loader2 className="size-4 animate-spin" />}
+          {busy ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
+        </Button>
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        {isLogin ? 'No account? ' : 'Already registered? '}
+        <Link
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+          href={isLogin ? '/register' : '/login'}
+        >
+          {isLogin ? 'Create one' : 'Sign in'}
+        </Link>
+      </p>
+    </div>
   );
 }

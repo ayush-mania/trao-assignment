@@ -357,8 +357,9 @@ validated before it is saved. Full rule and the reasoning: [ADR 0008](docs/decis
 
 ## Frontend
 
-`apps/web` — Next.js 16 App Router, Tailwind 4, shadcn/ui (Base UI), TanStack Query. It imports only
-**types** from `@trao/core`. Session gate with `?next=` return, kit list, single and bulk kit creation,
+`apps/web` — Next.js 16 App Router, Tailwind 4, shadcn/ui (Base UI), TanStack Query, system dark mode.
+It imports only **types** from `@trao/core`. Layout is a persistent kit rail plus a centred content
+column (a drawer on phones); every screen has explicit loading, empty and error states. Session gate with `?next=` return, kit list, single and bulk kit creation,
 and a live ten-step generation timeline that polls the persisted run state every 2 s and offers
 "Retry from the failed step" on failure. Explicit loading, empty and error states everywhere; real
 links and forms so everything is keyboard-reachable. Walkthrough: [`docs/features/web.md`](docs/features/web.md).

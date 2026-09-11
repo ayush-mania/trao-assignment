@@ -1,5 +1,6 @@
 'use client';
 import type { KitMeta } from '@trao/core';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /** Says what it will keep before it runs, so a regeneration is never a surprise. */
@@ -25,23 +26,32 @@ export function RegenerateButton({
   const replaced = itemIds.length - kept;
   const hint =
     itemIds.length > 0
-      ? `replaces ${replaced} generated, keeps ${kept} edited/pinned/yours`
+      ? kept > 0
+        ? `Replaces ${replaced} generated · keeps ${kept} you edited, pinned or wrote`
+        : `Replaces all ${replaced} generated`
       : sectionEdited
-        ? 'you edited this; regenerating overwrites it'
+        ? 'You edited this — regenerating overwrites it'
         : undefined;
+  const hintId = `${label.replace(/\s+/g, '-')}-hint`;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col items-end gap-1">
       <Button
         size="sm"
         variant="outline"
+        className="gap-1.5"
         onClick={onClick}
         disabled={pending}
-        aria-describedby={hint ? `${label}-hint` : undefined}
+        aria-describedby={hint ? hintId : undefined}
       >
+        {pending ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="size-3.5" />
+        )}
         {pending ? 'Regenerating…' : label}
       </Button>
       {hint && (
-        <span id={`${label}-hint`} className="text-xs text-muted-foreground">
+        <span id={hintId} className="text-[11px] text-muted-foreground">
           {hint}
         </span>
       )}

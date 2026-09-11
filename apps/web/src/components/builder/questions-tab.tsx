@@ -15,16 +15,24 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import type { Kit, KitMeta, Question, QuestionCategory } from '@trao/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { builderApi } from '@/lib/builder-api';
 import { useBuilderMutation } from '@/lib/use-builder';
-import { CATEGORIES, QuestionCard } from './question-card';
+import { CATEGORIES, CATEGORY_LABEL, QuestionCard } from './question-card';
 import { RegenerateButton } from './regenerate-button';
 
 export function QuestionsTab({ id, kit, meta }: { id: string; kit: Kit; meta: KitMeta }) {
   const m = useBuilderMutation(id);
+  useEffect(() => {
+    if (m.error) {
+      toast.error(m.error);
+      m.clearError();
+    }
+  }, [m.error, m.clearError, m]);
   const [regenerating, setRegenerating] = useState<QuestionCategory | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -55,40 +63,32 @@ export function QuestionsTab({ id, kit, meta }: { id: string; kit: Kit; meta: Ki
 
   const uncovered = new Set(kit.coverage.uncovered_requirement_ids);
   return (
-    <div className="space-y-8">
-      {m.error && (
-        <p
-          role="alert"
-          className="rounded border border-destructive/40 bg-destructive/5 p-2 text-sm"
-        >
-          {m.error}{' '}
-          <button className="underline" onClick={m.clearError}>
-            dismiss
-          </button>
-        </p>
-      )}
+    <div className="space-y-10">
       {uncovered.size > 0 && (
-        <p className="rounded border p-2 text-sm">
-          Not yet covered by any question:{' '}
-          {[...uncovered].map((r) => (
-            <span
-              key={r}
-              className="mr-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
-              title={kit.role.requirements.find((x) => x.id === r)?.text}
-            >
-              {r}
-            </span>
-          ))}
-          — add a question for them or regenerate a category.
-        </p>
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <p className="font-medium">Not yet covered by any question</p>
+          <p className="mt-1 text-muted-foreground">
+            {[...uncovered].map((r) => (
+              <span
+                key={r}
+                className="mr-1.5 inline-block rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs"
+                title={kit.role.requirements.find((x) => x.id === r)?.text}
+              >
+                {r}
+              </span>
+            ))}
+            — add a question for them or regenerate a category.
+          </p>
+        </div>
       )}
       {CATEGORIES.map((c) => {
         const qs = byCategory(c);
         return (
           <section key={c} aria-labelledby={`cat-${c}`} className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 id={`cat-${c}`} className="font-medium capitalize">
-                {c} <span className="text-sm font-normal text-muted-foreground">({qs.length})</span>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <h3 id={`cat-${c}`} className="text-lg font-semibold tracking-tight">
+                {CATEGORY_LABEL[c]}{' '}
+                <span className="text-sm font-normal text-muted-foreground">{qs.length}</span>
               </h3>
               {c === 'company-fit' && kit.company_brief.sources.length === 0 && qs.length === 0 ? (
                 <span className="text-xs text-muted-foreground">
@@ -116,7 +116,7 @@ export function QuestionsTab({ id, kit, meta }: { id: string; kit: Kit; meta: Ki
               onDragEnd={onDragEnd(c)}
             >
               <SortableContext items={qs.map((q) => q.id)} strategy={verticalListSortingStrategy}>
-                <ul className="space-y-2" aria-busy={regenerating === c}>
+                <ul className="space-y-3" aria-busy={regenerating === c}>
                   {qs.map((q) => (
                     <QuestionCard
                       key={q.id}
@@ -206,8 +206,8 @@ export function QuestionsTab({ id, kit, meta }: { id: string; kit: Kit; meta: Ki
               </SortableContext>
             </DndContext>
             {qs.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No {c} questions. Add one below or regenerate.
+              <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                No {CATEGORY_LABEL[c].toLowerCase()} questions yet.
               </p>
             )}
             <AddQuestion
@@ -234,13 +234,18 @@ function AddQuestion({
   const [open, setOpen] = useState(false);
   if (!open)
     return (
-      <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
-        + Add a {category} question
+      <Button
+        size="sm"
+        variant="ghost"
+        className="gap-1.5 text-muted-foreground"
+        onClick={() => setOpen(true)}
+      >
+        <Plus className="size-4" /> Add a question
       </Button>
     );
   return (
     <form
-      className="flex flex-wrap items-end gap-2 rounded-lg border border-dashed p-3"
+      className="flex flex-wrap items-end gap-3 rounded-xl border border-dashed p-4"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);

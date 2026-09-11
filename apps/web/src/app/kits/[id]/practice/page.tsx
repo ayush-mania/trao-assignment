@@ -4,10 +4,13 @@ import type { Confidence, Flashcard, PracticeState } from '@trao/core';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState, ErrorBlock, PageHeader } from '@/components/ui/page-state';
+import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { API_URL, ApiError } from '@/lib/api';
-import { ErrorState, RequireSession } from '@/lib/session';
+import { RequireSession } from '@/lib/session';
 import { useKit } from '@/lib/use-kit';
 
 // Mirrors packages/core practice/order.ts (types only cross the boundary; see docs/features/web.md).
@@ -139,7 +142,7 @@ function Practice() {
     return <Skeleton className="h-64 w-full" aria-label="Loading practice" />;
   if (kitQ.error || practiceQ.error)
     return (
-      <ErrorState
+      <ErrorBlock
         message={(kitQ.error ?? practiceQ.error)!.message}
         action={
           <Button variant="outline" nativeButton={false} render={<Link href="/kits" />}>
@@ -150,7 +153,7 @@ function Practice() {
     );
   if (!kitQ.data.kit.kit)
     return (
-      <ErrorState
+      <ErrorBlock
         message="This kit is not finished yet."
         action={
           <Button nativeButton={false} render={<Link href={`/kits/${id}`} />}>
@@ -164,104 +167,131 @@ function Practice() {
   const shaky = cards.filter((c) => state[c.id]?.confidence === 1).length;
   const finished = session && index >= session.length;
 
+  const pct =
+    session && session.length
+      ? Math.round((Math.min(index, session.length) / session.length) * 100)
+      : 0;
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Practice</h1>
-          <p className="text-sm text-muted-foreground">
-            <Link href={`/kits/${id}`} className="underline">
-              {kitQ.data.kit.kit.role.title || 'Kit'}
-            </Link>{' '}
-            · {covered} of {cards.length} covered{shaky > 0 && ` · ${shaky} shaky`}
-          </p>
-        </div>
-        {session && !finished && (
-          <span className="text-sm text-muted-foreground" aria-live="polite">
-            Card {index + 1} of {session.length}
-          </span>
-        )}
-      </header>
+    <>
+      <PageHeader
+        eyebrow={
+          <Link
+            href={`/kits/${id}`}
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            <ArrowLeft className="size-3" /> {kitQ.data.kit.kit.role.title || 'Kit'}
+          </Link>
+        }
+        title="Practice"
+        description={
+          cards.length
+            ? `${covered} of ${cards.length} covered${shaky > 0 ? ` · ${shaky} shaky` : ''}`
+            : undefined
+        }
+        actions={
+          covered > 0 && !session ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground"
+              onClick={() => reset.mutate()}
+            >
+              <RotateCcw className="size-3.5" /> Reset progress
+            </Button>
+          ) : undefined
+        }
+      />
 
       {cards.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          This kit has no flashcards yet. Add or regenerate some in the builder.
-        </p>
+        <EmptyState
+          title="No flashcards yet"
+          description="Add or regenerate flashcards in the builder, then come back to practise."
+          action={
+            <Button variant="outline" nativeButton={false} render={<Link href={`/kits/${id}`} />}>
+              Open the builder
+            </Button>
+          }
+        />
       )}
 
       {cards.length > 0 && (!session || finished) && (
-        <section className="space-y-4 rounded-lg border p-6 text-center">
-          {finished ? (
-            <>
-              <h2 className="text-lg font-medium">Session done</h2>
-              <p className="text-sm text-muted-foreground">
-                Next session starts with what you were least sure about, then what you have not seen
-                for longest.
-              </p>
-            </>
-          ) : (
-            <>
-              <h2 className="text-lg font-medium">
-                {covered === 0 ? 'Start your first session' : 'Ready for another round?'}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Unseen cards come first, then the ones you rated shaky. Space reveals, 1 / 2 / 3
-                rates.
-              </p>
-            </>
-          )}
-          <Button onClick={start}>{covered === 0 ? 'Start' : 'Start next session'}</Button>
-        </section>
+        <EmptyState
+          icon={RotateCcw}
+          title={
+            finished
+              ? 'Session done'
+              : covered === 0
+                ? 'Start your first session'
+                : 'Ready for another round?'
+          }
+          description={
+            finished
+              ? 'The next session starts with what you were least sure about, then what you have not seen for longest.'
+              : 'Unseen cards come first, then the ones you rated shaky. Space reveals, 1 / 2 / 3 rates.'
+          }
+          action={
+            <Button size="lg" onClick={start}>
+              {covered === 0 ? 'Start' : 'Start next session'}
+            </Button>
+          }
+        />
       )}
 
       {current && !finished && (
-        <section aria-live="polite" className="space-y-4 rounded-lg border p-6">
-          <p className="text-xs text-muted-foreground">
-            {current.id}
-            {state[current.id] && ` · last time: ${LABELS[state[current.id]!.confidence]}`}
-          </p>
-          <p className="text-lg font-medium">{current.front}</p>
-          {!revealed ? (
-            <Button onClick={() => setRevealed(true)} autoFocus>
-              Reveal answer <kbd className="ml-2 rounded border px-1 text-xs">space</kbd>
-            </Button>
-          ) : (
-            <>
-              <p className="whitespace-pre-wrap rounded bg-muted p-3 text-sm">{current.back}</p>
-              <fieldset className="flex flex-wrap gap-2">
-                <legend className="mb-2 text-sm">How confident did you feel?</legend>
-                {([1, 2, 3] as Confidence[]).map((c) => (
-                  <Button
-                    key={c}
-                    variant={c === 1 ? 'destructive' : c === 3 ? 'default' : 'secondary'}
-                    onClick={() => onRate(c)}
-                    autoFocus={c === 2}
-                  >
-                    {LABELS[c]} <kbd className="ml-2 rounded border px-1 text-xs">{c}</kbd>
-                  </Button>
-                ))}
-              </fieldset>
-            </>
-          )}
+        <section aria-live="polite" className="space-y-5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Card {index + 1} of {session!.length}
+              {state[current.id] && ` · last time: ${LABELS[state[current.id]!.confidence]}`}
+            </span>
+            <span className="font-mono">{current.id}</span>
+          </div>
+          <Progress value={pct} className="h-1" aria-label={`${pct}% of the session`} />
+          <div className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+            <p className="text-lg font-medium leading-snug md:text-xl">{current.front}</p>
+            {!revealed ? (
+              <Button className="mt-8 gap-2" size="lg" onClick={() => setRevealed(true)} autoFocus>
+                Reveal answer <Kbd>space</Kbd>
+              </Button>
+            ) : (
+              <>
+                <p className="mt-6 whitespace-pre-wrap rounded-xl bg-muted/60 p-4 text-[15px] leading-relaxed">
+                  {current.back}
+                </p>
+                <fieldset className="mt-6">
+                  <legend className="mb-3 text-sm text-muted-foreground">
+                    How confident did you feel?
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {([1, 2, 3] as Confidence[]).map((c) => (
+                      <Button
+                        key={c}
+                        size="lg"
+                        variant={c === 1 ? 'destructive' : c === 3 ? 'default' : 'secondary'}
+                        className="gap-2"
+                        onClick={() => onRate(c)}
+                        autoFocus={c === 2}
+                      >
+                        {LABELS[c]} <Kbd>{c}</Kbd>
+                      </Button>
+                    ))}
+                  </div>
+                </fieldset>
+              </>
+            )}
+          </div>
         </section>
       )}
 
       {cards.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium">Coverage</h2>
-            {covered > 0 && (
-              <Button size="xs" variant="ghost" onClick={() => reset.mutate()}>
-                Reset progress
-              </Button>
-            )}
-          </div>
-          <ul className="mt-2 divide-y rounded-lg border text-sm">
+        <section className="mt-10">
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">Coverage</h2>
+          <ul className="divide-y rounded-xl border text-sm">
             {cards.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2">
+              <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <span className="truncate">{c.front}</span>
                 <span
-                  className={`shrink-0 text-xs ${!state[c.id] ? 'text-muted-foreground' : state[c.id]!.confidence === 1 ? 'text-destructive' : ''}`}
+                  className={`shrink-0 text-xs ${!state[c.id] ? 'text-muted-foreground' : state[c.id]!.confidence === 1 ? 'text-destructive' : state[c.id]!.confidence === 3 ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
                 >
                   {state[c.id]
                     ? `${LABELS[state[c.id]!.confidence]} · ${state[c.id]!.reviews}×`
@@ -272,6 +302,14 @@ function Practice() {
           </ul>
         </section>
       )}
-    </div>
+    </>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border bg-background/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+      {children}
+    </kbd>
   );
 }

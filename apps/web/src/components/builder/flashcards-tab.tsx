@@ -1,6 +1,8 @@
 'use client';
 import type { Kit, KitMeta } from '@trao/core';
-import { useState } from 'react';
+import { Pin, PinOff, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { builderApi } from '@/lib/builder-api';
@@ -11,17 +13,21 @@ import { RegenerateButton } from './regenerate-button';
 
 export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: KitMeta }) {
   const m = useBuilderMutation(id);
+  useEffect(() => {
+    if (m.error) {
+      toast.error(m.error);
+      m.clearError();
+    }
+  }, [m.error, m]);
   const [pending, setPending] = useState(false);
   const [adding, setAdding] = useState(false);
   return (
-    <div className="space-y-4">
-      {m.error && (
-        <p role="alert" className="text-sm text-destructive">
-          {m.error}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {kit.flashcards.length} card{kit.flashcards.length === 1 ? '' : 's'}. Click any side to
+          edit.
         </p>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{kit.flashcards.length} cards</p>
         <RegenerateButton
           label="Regenerate flashcards"
           itemIds={kit.flashcards.map((f) => f.id)}
@@ -35,13 +41,21 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
           }}
         />
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      {kit.flashcards.length === 0 && (
+        <p className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+          No flashcards yet. Add one or regenerate.
+        </p>
+      )}
+      <ul className="grid gap-3 sm:grid-cols-2" aria-busy={pending}>
         {kit.flashcards.map((f) => (
-          <li key={f.id} className="space-y-2 rounded-lg border p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <li
+            key={f.id}
+            className="group flex flex-col rounded-xl border bg-card p-3 transition-shadow hover:shadow-sm"
+          >
+            <div className="flex flex-wrap items-center gap-1.5 px-2 text-[11px] text-muted-foreground">
               <span className="font-mono">{f.id}</span>
               {f.requirement_ids.map((r) => (
-                <span key={r} className="rounded bg-muted px-1.5 py-0.5">
+                <span key={r} className="rounded-md bg-muted px-1.5 py-0.5 font-mono">
                   {r}
                 </span>
               ))}
@@ -54,7 +68,7 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
                 m.mutate({ run: () => builderApi.editFlashcard(id, f.id, { front }) })
               }
               rows={2}
-              className="font-medium"
+              className="mt-1 font-medium"
             />
             <EditableText
               label={`Back of ${f.id}`}
@@ -63,12 +77,14 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
                 m.mutate({ run: () => builderApi.editFlashcard(id, f.id, { back }) })
               }
               rows={3}
-              className="text-sm"
+              placeholder="Back — the answer in a sentence or two"
+              className="text-sm text-muted-foreground focus:text-foreground"
             />
-            <div className="flex gap-2">
+            <div className="mt-auto flex justify-end gap-1 pt-2 opacity-60 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
               <Button
-                size="xs"
+                size="icon-sm"
                 variant="ghost"
+                aria-label={meta.items[f.id]?.pinned ? `Unpin ${f.id}` : `Pin ${f.id}`}
                 aria-pressed={meta.items[f.id]?.pinned ?? false}
                 onClick={() =>
                   m.mutate({
@@ -76,12 +92,17 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
                   })
                 }
               >
-                {meta.items[f.id]?.pinned ? 'Unpin' : 'Pin'}
+                {meta.items[f.id]?.pinned ? (
+                  <PinOff className="size-4" />
+                ) : (
+                  <Pin className="size-4" />
+                )}
               </Button>
               <Button
-                size="xs"
+                size="icon-sm"
                 variant="ghost"
-                className="text-destructive"
+                className="text-muted-foreground hover:text-destructive"
+                aria-label={`Delete ${f.id}`}
                 onClick={() =>
                   m.mutate({
                     run: () => builderApi.deleteItem(id, f.id),
@@ -95,7 +116,7 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
                   })
                 }
               >
-                Delete
+                <Trash2 className="size-4" />
               </Button>
             </div>
           </li>
@@ -103,7 +124,7 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
       </ul>
       {adding ? (
         <form
-          className="flex flex-wrap items-end gap-2 rounded-lg border border-dashed p-3"
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-dashed p-4"
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -117,11 +138,11 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
             setAdding(false);
           }}
         >
-          <label className="flex-1 space-y-1 text-xs">
+          <label className="min-w-40 flex-1 space-y-1 text-xs">
             Front
             <Input name="front" required autoFocus />
           </label>
-          <label className="flex-1 space-y-1 text-xs">
+          <label className="min-w-40 flex-1 space-y-1 text-xs">
             Back
             <Input name="back" />
           </label>
@@ -133,8 +154,13 @@ export function FlashcardsTab({ id, kit, meta }: { id: string; kit: Kit; meta: K
           </Button>
         </form>
       ) : (
-        <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
-          + Add a flashcard
+        <Button
+          size="sm"
+          variant="ghost"
+          className="gap-1.5 text-muted-foreground"
+          onClick={() => setAdding(true)}
+        >
+          <Plus className="size-4" /> Add a flashcard
         </Button>
       )}
     </div>

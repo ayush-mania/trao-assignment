@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { ErrorBlock } from '@/components/ui/page-state';
 import { api, ApiError, type User } from './api';
 
 export function useSession() {
@@ -56,11 +57,5 @@ export function RequireSession({ children }: { children: React.ReactNode }) {
 }
 
 export function ErrorState({ message, action }: { message: string; action?: React.ReactNode }) {
-  return (
-    <div role="alert" className="m-8 rounded-lg border border-destructive/40 bg-destructive/5 p-6">
-      <p className="font-medium">Something went wrong</p>
-      <p className="mt-1 text-sm text-muted-foreground">{message}</p>
-      {action && <div className="mt-4">{action}</div>}
-    </div>
-  );
+  return <ErrorBlock message={message} action={action} />;
 }

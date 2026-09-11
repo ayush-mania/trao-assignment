@@ -9,6 +9,18 @@
 **The web app only ever imports types from `@trao/core`.** Runtime constants it needs (the step list)
 are mirrored locally, because core depends on Node modules that cannot ship to the browser.
 
+## Layout and states (revamp, 2026-09-11)
+
+ChatGPT-style shell: a persistent left rail with the kit list (status icon, title, company; live while
+anything generates) and "New kit", a single centred content column (max 48 rem), a slide-in drawer on
+phones. One accent colour, neutral surfaces, system dark mode (`next-themes`, class strategy).
+Shared building blocks in `components/ui/page-state.tsx`: `PageHeader` (eyebrow / title /
+description / actions), `EmptyState` (dashed card, icon, one call to action), `ErrorBlock`
+(`role="alert"`, always with a way out). Every screen has a skeleton while loading, an empty state
+with a next step, and an error state with retry or back. Background save failures surface as toasts
+(`sonner`) instead of inline banners. Inline text reads as text until hovered/focused, then becomes a
+field (`EditableText`, `field-sizing-content`), so the builder looks like a document, not a form.
+
 ## Session
 
 `useSession()` probes `GET /auth/me` once (a 401 means signed out, not an error). `RequireSession`
